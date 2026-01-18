@@ -90,24 +90,50 @@ const AdminSettings: React.FC = () => {
 
                         <div className="p-6 bg-slate-50 rounded-3xl space-y-4">
                             <div>
-                                <p className="font-black text-slate-900 uppercase text-xs">Tunnel PIN #</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Global Access Credential</p>
+                                <p className="font-black text-slate-900 uppercase text-xs">Public API Nexus URL</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Redirect frontend to tunneled backend</p>
                             </div>
                             <input
                                 type="text"
-                                value={settings.tunnel_password || ''}
-                                onChange={(e) => setSettings(prev => ({ ...prev, tunnel_password: e.target.value }))}
-                                placeholder="Set Tunnel PIN"
-                                className="w-full bg-white border-2 border-slate-100 rounded-2xl px-6 py-3 font-black text-slate-900 outline-none focus:border-indigo-600 transition-all font-mono tracking-widest text-sm"
+                                value={localStorage.getItem('tallman_api_override') || ''}
+                                onChange={(e) => {
+                                    localStorage.setItem('tallman_api_override', e.target.value);
+                                    setStatus('API Nexus Overridden. Refreshing Registry...');
+                                    setTimeout(() => window.location.reload(), 1500);
+                                }}
+                                placeholder="https://api-tunnel.pinggy.io"
+                                className="w-full bg-white border-2 border-slate-100 rounded-2xl px-6 py-3 font-black text-slate-900 outline-none focus:border-indigo-600 transition-all text-sm"
                             />
                         </div>
 
                         {settings.external_url_active === 'true' && (
-                            <div className="p-6 bg-indigo-50 border-2 border-indigo-100 rounded-3xl animate-in slide-in-from-top-4 duration-500">
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">Active Public Link</p>
-                                <p className="font-black text-indigo-900 text-lg break-all italic underline cursor-pointer">
-                                    https://tallman-industrial-registry-{(Math.random() * 10000).toFixed(0)}.localtunnel.me
-                                </p>
+                            <div className="space-y-4 animate-in slide-in-from-top-4 duration-500">
+                                <div className="p-6 bg-indigo-50 border-2 border-indigo-100 rounded-3xl space-y-3">
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">🚀 Professional Ingress Protocol (Pinggy)</p>
+                                    <div className="text-[11px] font-bold text-indigo-900 space-y-3">
+                                        <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-700 text-[10px] mb-2 uppercase">
+                                            <strong>Industrial Notice:</strong> Free tunnels are valid for <strong>1 Hour</strong>. Ensure <code>npm run dev</code> is active before starting tunnels.
+                                        </div>
+
+                                        <p>To establish a **True Public Access** gateway, run these commands. If prompted for a password, just press <strong>[ENTER]</strong>. We use <code>127.0.0.1</code> for maximum Windows stability.</p>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <p className="uppercase text-[9px] text-indigo-500 font-black">1. Tunnel the Frontend Console:</p>
+                                                <code className="block bg-indigo-900 text-white p-3 rounded-xl font-mono text-[9px] break-all">ssh -p 443 -R0:127.0.0.1:3180 pinggy@a.pinggy.io</code>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <p className="uppercase text-[9px] text-indigo-500 font-black">2. Tunnel the API Nexus:</p>
+                                                <code className="block bg-indigo-900 text-white p-3 rounded-xl font-mono text-[9px] break-all">ssh -p 443 -R0:127.0.0.1:3185 pinggy@a.pinggy.io</code>
+                                            </div>
+                                        </div>
+
+                                        <p className="pt-2 border-t border-indigo-200 text-[9px] text-slate-500 italic">
+                                            Persistent failure? Try using <code>127.0.0.1</code> instead of <code>localhost</code> in your manual commands.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

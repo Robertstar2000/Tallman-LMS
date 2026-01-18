@@ -1,6 +1,16 @@
 import { User, Course, Enrollment, UserRole, MentorshipLog, Badge, ForumPost } from './types.ts';
 
-const API_BASE = 'http://localhost:3185/api';
+// Calibrating API Nexus Gateway
+const getApiBase = () => {
+  const override = localStorage.getItem('tallman_api_override');
+  if (override) return `${override}/api`;
+
+  // Production vs Development Registry
+  const metaEnv = (import.meta as any).env || {};
+  return (metaEnv.VITE_API_URL || 'http://localhost:3185') + '/api';
+};
+
+const API_BASE = getApiBase();
 
 class TallmanAPIClient {
   private getAuthToken(): string | null {
