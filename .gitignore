@@ -1,0 +1,52 @@
+# Industrial Data Registry
+server/db.sqlite
+server/db.sqlite-journal
+*.sqlite
+*.sqlite-journal
+
+# Environment & Credentials
+.env
+.env.local
+.env.*
+!.env.example
+
+# Production Assets
+dist
+dist-ssr
+node_modules
+
+# Diagnostics & Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+discovery.log
+models_list.log
+payload.log
+g25_image.log
+g3pro_image.log
+check-methods.ts
+check-models-v2.ts
+discover-models.ts
+test-payload.ts
+test-g3-image-final.ts
+test-g25_image.ts
+test-direct-image.ts
+test-image-gen.ts
+test-imagen-direct.ts
+test-g3pro-image.ts
+test-g3-image.ts
+check-image-models.ts
+list-models.ts
+check-models.ts
+
+# Editor & System Registry
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

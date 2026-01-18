@@ -1,0 +1,9 @@
+{
+  "name": "Tallman LMS",
+  "description": "Enterprise-grade Learning Management System with Gemini-powered curriculum architecture.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

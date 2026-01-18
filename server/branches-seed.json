@@ -1,0 +1,32 @@
+[
+  {
+    "branch_id": "br_addison",
+    "name": "Tallman-Addison",
+    "primary_color": "#4f46e5",
+    "domain": "addison.tallmanlms.com"
+  },
+  {
+    "branch_id": "br_columbus",
+    "name": "Tallman-Columbus",
+    "primary_color": "#059669",
+    "domain": "columbus.tallmanlms.com"
+  },
+  {
+    "branch_id": "br_lakecity",
+    "name": "Tallman-Lake City",
+    "primary_color": "#dc2626",
+    "domain": "lakecity.tallmanlms.com"
+  },
+  {
+    "branch_id": "br_mcr",
+    "name": "MCR Core",
+    "primary_color": "#7c3aed",
+    "domain": "mcr.tallmanlms.com"
+  },
+  {
+    "branch_id": "br_bradley",
+    "name": "Bradley",
+    "primary_color": "#ea580c",
+    "domain": "bradley.tallmanlms.com"
+  }
+]

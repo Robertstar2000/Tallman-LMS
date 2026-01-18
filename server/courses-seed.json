@@ -1,0 +1,928 @@
+[
+  {
+    "course_id": "c_leadership",
+    "course_name": "Executive Strategic Leadership",
+    "short_description": "Industrial governance, P&L architecture, and technical stewardship for Tallman directors.",
+    "thumbnail_url": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop",
+    "category_id": "business",
+    "instructor_id": "inst_01",
+    "status": "published",
+    "enrolled_count": 85,
+    "rating": 4.9,
+    "difficulty": "Advanced",
+    "tracks": [
+      "Stewardship of Employee Ownership",
+      "P21 ERP Financial Oversight",
+      "Branch P&L Architecture",
+      "NFPA 70E Safety Governance"
+    ],
+    "modules": [
+      {
+        "module_id": "m_c_leadership_0",
+        "course_id": "c_leadership",
+        "module_title": "Stewardship of Employee Ownership",
+        "position": 0,
+        "lessons": [
+          {
+            "lesson_id": "l_c_leadership_0_doc",
+            "module_id": "m_c_leadership_0",
+            "lesson_title": "Stewardship of Employee Ownership: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: STEWARDSHIP OF EMPLOYEE OWNERSHIP\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Stewardship of Employee Ownership**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Stewardship of Employee Ownership.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_leadership_0_quiz",
+            "module_id": "m_c_leadership_0",
+            "lesson_title": "Stewardship of Employee Ownership: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Stewardship of Employee Ownership?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_leadership_1",
+        "course_id": "c_leadership",
+        "module_title": "P21 ERP Financial Oversight",
+        "position": 1,
+        "lessons": [
+          {
+            "lesson_id": "l_c_leadership_1_doc",
+            "module_id": "m_c_leadership_1",
+            "lesson_title": "P21 ERP Financial Oversight: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: P21 ERP FINANCIAL OVERSIGHT\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **P21 ERP Financial Oversight**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for P21 ERP Financial Oversight.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_leadership_1_quiz",
+            "module_id": "m_c_leadership_1",
+            "lesson_title": "P21 ERP Financial Oversight: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for P21 ERP Financial Oversight?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_leadership_2",
+        "course_id": "c_leadership",
+        "module_title": "Branch P&L Architecture",
+        "position": 2,
+        "lessons": [
+          {
+            "lesson_id": "l_c_leadership_2_doc",
+            "module_id": "m_c_leadership_2",
+            "lesson_title": "Branch P&L Architecture: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: BRANCH P&L ARCHITECTURE\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Branch P&L Architecture**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Branch P&L Architecture.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_leadership_2_quiz",
+            "module_id": "m_c_leadership_2",
+            "lesson_title": "Branch P&L Architecture: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Branch P&L Architecture?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_leadership_3",
+        "course_id": "c_leadership",
+        "module_title": "NFPA 70E Safety Governance",
+        "position": 3,
+        "lessons": [
+          {
+            "lesson_id": "l_c_leadership_3_doc",
+            "module_id": "m_c_leadership_3",
+            "lesson_title": "NFPA 70E Safety Governance: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: NFPA 70E SAFETY GOVERNANCE\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **NFPA 70E Safety Governance**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for NFPA 70E Safety Governance.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_leadership_3_quiz",
+            "module_id": "m_c_leadership_3",
+            "lesson_title": "NFPA 70E Safety Governance: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for NFPA 70E Safety Governance?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "course_id": "c_sales_rental",
+    "course_name": "Power Utility Sales & Rental Techniques",
+    "short_description": "Advanced methodologies for selling and renting tools to Power Utilities and their contractors.",
+    "thumbnail_url": "https://images.unsplash.com/photo-1590483734724-383b85ad0590?q=80&w=2070&auto=format&fit=crop",
+    "category_id": "business",
+    "instructor_id": "inst_01",
+    "status": "published",
+    "enrolled_count": 42,
+    "rating": 5,
+    "difficulty": "Advanced",
+    "tracks": [
+      "Contractor Procurement Logic",
+      "Utility Equipment Rental Cycles",
+      "DDIN Value Proposition",
+      "Epicor P21 Sales Flow"
+    ],
+    "modules": [
+      {
+        "module_id": "m_c_sales_rental_0",
+        "course_id": "c_sales_rental",
+        "module_title": "Contractor Procurement Logic",
+        "position": 0,
+        "lessons": [
+          {
+            "lesson_id": "l_c_sales_rental_0_doc",
+            "module_id": "m_c_sales_rental_0",
+            "lesson_title": "Contractor Procurement Logic: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: CONTRACTOR PROCUREMENT LOGIC\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Contractor Procurement Logic**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Contractor Procurement Logic.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_sales_rental_0_quiz",
+            "module_id": "m_c_sales_rental_0",
+            "lesson_title": "Contractor Procurement Logic: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Contractor Procurement Logic?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_sales_rental_1",
+        "course_id": "c_sales_rental",
+        "module_title": "Utility Equipment Rental Cycles",
+        "position": 1,
+        "lessons": [
+          {
+            "lesson_id": "l_c_sales_rental_1_doc",
+            "module_id": "m_c_sales_rental_1",
+            "lesson_title": "Utility Equipment Rental Cycles: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: UTILITY EQUIPMENT RENTAL CYCLES\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Utility Equipment Rental Cycles**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Utility Equipment Rental Cycles.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_sales_rental_1_quiz",
+            "module_id": "m_c_sales_rental_1",
+            "lesson_title": "Utility Equipment Rental Cycles: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Utility Equipment Rental Cycles?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_sales_rental_2",
+        "course_id": "c_sales_rental",
+        "module_title": "DDIN Value Proposition",
+        "position": 2,
+        "lessons": [
+          {
+            "lesson_id": "l_c_sales_rental_2_doc",
+            "module_id": "m_c_sales_rental_2",
+            "lesson_title": "DDIN Value Proposition: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: DDIN VALUE PROPOSITION\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **DDIN Value Proposition**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for DDIN Value Proposition.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_sales_rental_2_quiz",
+            "module_id": "m_c_sales_rental_2",
+            "lesson_title": "DDIN Value Proposition: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for DDIN Value Proposition?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_sales_rental_3",
+        "course_id": "c_sales_rental",
+        "module_title": "Epicor P21 Sales Flow",
+        "position": 3,
+        "lessons": [
+          {
+            "lesson_id": "l_c_sales_rental_3_doc",
+            "module_id": "m_c_sales_rental_3",
+            "lesson_title": "Epicor P21 Sales Flow: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: EPICOR P21 SALES FLOW\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Epicor P21 Sales Flow**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Epicor P21 Sales Flow.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_sales_rental_3_quiz",
+            "module_id": "m_c_sales_rental_3",
+            "lesson_title": "Epicor P21 Sales Flow: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Epicor P21 Sales Flow?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "course_id": "c_logistics",
+    "course_name": "Distribution Warehouse Management",
+    "short_description": "Mastery of industrial inventory management, shipping/receiving logistics, and hub operations.",
+    "thumbnail_url": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop",
+    "category_id": "tech",
+    "instructor_id": "inst_01",
+    "status": "published",
+    "enrolled_count": 56,
+    "rating": 4.7,
+    "difficulty": "Intermediate",
+    "tracks": [
+      "Serialized Asset Control",
+      "P21 Inventory Adjustment SOP",
+      "Hazardous Materials Logistics",
+      "Branch Transfer Workflows"
+    ],
+    "modules": [
+      {
+        "module_id": "m_c_logistics_0",
+        "course_id": "c_logistics",
+        "module_title": "Serialized Asset Control",
+        "position": 0,
+        "lessons": [
+          {
+            "lesson_id": "l_c_logistics_0_doc",
+            "module_id": "m_c_logistics_0",
+            "lesson_title": "Serialized Asset Control: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: SERIALIZED ASSET CONTROL\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Serialized Asset Control**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Serialized Asset Control.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_logistics_0_quiz",
+            "module_id": "m_c_logistics_0",
+            "lesson_title": "Serialized Asset Control: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Serialized Asset Control?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_logistics_1",
+        "course_id": "c_logistics",
+        "module_title": "P21 Inventory Adjustment SOP",
+        "position": 1,
+        "lessons": [
+          {
+            "lesson_id": "l_c_logistics_1_doc",
+            "module_id": "m_c_logistics_1",
+            "lesson_title": "P21 Inventory Adjustment SOP: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: P21 INVENTORY ADJUSTMENT SOP\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **P21 Inventory Adjustment SOP**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for P21 Inventory Adjustment SOP.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_logistics_1_quiz",
+            "module_id": "m_c_logistics_1",
+            "lesson_title": "P21 Inventory Adjustment SOP: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for P21 Inventory Adjustment SOP?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_logistics_2",
+        "course_id": "c_logistics",
+        "module_title": "Hazardous Materials Logistics",
+        "position": 2,
+        "lessons": [
+          {
+            "lesson_id": "l_c_logistics_2_doc",
+            "module_id": "m_c_logistics_2",
+            "lesson_title": "Hazardous Materials Logistics: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: HAZARDOUS MATERIALS LOGISTICS\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Hazardous Materials Logistics**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Hazardous Materials Logistics.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_logistics_2_quiz",
+            "module_id": "m_c_logistics_2",
+            "lesson_title": "Hazardous Materials Logistics: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Hazardous Materials Logistics?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_logistics_3",
+        "course_id": "c_logistics",
+        "module_title": "Branch Transfer Workflows",
+        "position": 3,
+        "lessons": [
+          {
+            "lesson_id": "l_c_logistics_3_doc",
+            "module_id": "m_c_logistics_3",
+            "lesson_title": "Branch Transfer Workflows: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: BRANCH TRANSFER WORKFLOWS\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Branch Transfer Workflows**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Branch Transfer Workflows.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_logistics_3_quiz",
+            "module_id": "m_c_logistics_3",
+            "lesson_title": "Branch Transfer Workflows: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Branch Transfer Workflows?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "course_id": "c_rope",
+    "course_name": "Lineman Rigging & Rope Science",
+    "short_description": "Mechanical load dynamics, splicing SOPs, and DDIN high-strength rigging physics.",
+    "thumbnail_url": "https://images.unsplash.com/photo-1605281317010-fe5ffe798156?q=80&w=2088&auto=format&fit=crop",
+    "category_id": "tech",
+    "instructor_id": "inst_01",
+    "status": "published",
+    "enrolled_count": 142,
+    "rating": 5,
+    "difficulty": "Advanced",
+    "tracks": [
+      "Synthetic Fiber Physics",
+      "HMPE vs Polyester Dynamics",
+      "12-Strand Eye Splicing SOP"
+    ],
+    "modules": [
+      {
+        "module_id": "m_c_rope_0",
+        "course_id": "c_rope",
+        "module_title": "Synthetic Fiber Physics",
+        "position": 0,
+        "lessons": [
+          {
+            "lesson_id": "l_c_rope_0_doc",
+            "module_id": "m_c_rope_0",
+            "lesson_title": "Synthetic Fiber Physics: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: SYNTHETIC FIBER PHYSICS\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Synthetic Fiber Physics**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Synthetic Fiber Physics.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_rope_0_quiz",
+            "module_id": "m_c_rope_0",
+            "lesson_title": "Synthetic Fiber Physics: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Synthetic Fiber Physics?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_rope_1",
+        "course_id": "c_rope",
+        "module_title": "HMPE vs Polyester Dynamics",
+        "position": 1,
+        "lessons": [
+          {
+            "lesson_id": "l_c_rope_1_doc",
+            "module_id": "m_c_rope_1",
+            "lesson_title": "HMPE vs Polyester Dynamics: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: HMPE VS POLYESTER DYNAMICS\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **HMPE vs Polyester Dynamics**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for HMPE vs Polyester Dynamics.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_rope_1_quiz",
+            "module_id": "m_c_rope_1",
+            "lesson_title": "HMPE vs Polyester Dynamics: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for HMPE vs Polyester Dynamics?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_rope_2",
+        "course_id": "c_rope",
+        "module_title": "12-Strand Eye Splicing SOP",
+        "position": 2,
+        "lessons": [
+          {
+            "lesson_id": "l_c_rope_2_doc",
+            "module_id": "m_c_rope_2",
+            "lesson_title": "12-Strand Eye Splicing SOP: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: 12-STRAND EYE SPLICING SOP\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **12-Strand Eye Splicing SOP**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for 12-Strand Eye Splicing SOP.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_rope_2_quiz",
+            "module_id": "m_c_rope_2",
+            "lesson_title": "12-Strand Eye Splicing SOP: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for 12-Strand Eye Splicing SOP?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "course_id": "c_testing",
+    "course_name": "High Voltage Dielectric Testing",
+    "short_description": "ASTM D120 compliance, bench mechanics, and safety threshold auditing for rubber goods.",
+    "thumbnail_url": "https://images.unsplash.com/photo-1533560271397-6a56f082e666?q=80&w=2070&auto=format&fit=crop",
+    "category_id": "tech",
+    "instructor_id": "inst_01",
+    "status": "published",
+    "enrolled_count": 215,
+    "rating": 4.8,
+    "difficulty": "Advanced",
+    "tracks": [
+      "Dielectric Bench Isolation",
+      "ASTM D120 Class Standards",
+      "Ozone Cracking Pinch Test"
+    ],
+    "modules": [
+      {
+        "module_id": "m_c_testing_0",
+        "course_id": "c_testing",
+        "module_title": "Dielectric Bench Isolation",
+        "position": 0,
+        "lessons": [
+          {
+            "lesson_id": "l_c_testing_0_doc",
+            "module_id": "m_c_testing_0",
+            "lesson_title": "Dielectric Bench Isolation: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: DIELECTRIC BENCH ISOLATION\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Dielectric Bench Isolation**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Dielectric Bench Isolation.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_testing_0_quiz",
+            "module_id": "m_c_testing_0",
+            "lesson_title": "Dielectric Bench Isolation: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Dielectric Bench Isolation?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_testing_1",
+        "course_id": "c_testing",
+        "module_title": "ASTM D120 Class Standards",
+        "position": 1,
+        "lessons": [
+          {
+            "lesson_id": "l_c_testing_1_doc",
+            "module_id": "m_c_testing_1",
+            "lesson_title": "ASTM D120 Class Standards: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: ASTM D120 CLASS STANDARDS\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **ASTM D120 Class Standards**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for ASTM D120 Class Standards.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_testing_1_quiz",
+            "module_id": "m_c_testing_1",
+            "lesson_title": "ASTM D120 Class Standards: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for ASTM D120 Class Standards?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "module_id": "m_c_testing_2",
+        "course_id": "c_testing",
+        "module_title": "Ozone Cracking Pinch Test",
+        "position": 2,
+        "lessons": [
+          {
+            "lesson_id": "l_c_testing_2_doc",
+            "module_id": "m_c_testing_2",
+            "lesson_title": "Ozone Cracking Pinch Test: Technical Manual",
+            "lesson_type": "document",
+            "content": "# TECHNICAL MANUAL: OZONE CRACKING PINCH TEST\n## TALLMAN ENTERPRISE SOP 2024-T-01\n\n### 1. INDUSTRIAL SCOPE\nThis technical manual establishes the standard operating procedure for **Ozone Cracking Pinch Test**. This SOP is grounded in ANSI, ASTM, and OSHA regulatory frameworks as applied by Tallman Equipment Co.\n\n### 2. PRIMARY SYSTEM INTEGRATION\n*   **ERP Core**: All physical asset movements must be logged in **Epicor P21**.\n*   **Production**: Custom machined components are verified via **Bradley Machining** tolerances.\n*   **Tooling**: Exclusively utilize **DDIN** certified rigging and pulling hardware.\n\n### 3. OPERATIONAL STEPS\n1.  **Asset Identification**: Query P21 Item Maintenance for the serialized record.\n2.  **Safety Verification**: Audit ASTM/ANSI compliance stickers for expiration.\n3.  **Procedure Execution**: Perform the specific technical task for Ozone Cracking Pinch Test.\n4.  **Audit**: Perform secondary visual scrutiny for mechanical or dielectric fatigue.\n5.  **Certification**: Apply the 'Tested & Ready' serialized tag and update P21.\n\n### 4. SPECIFICATIONS\n| METRIC | RATING | TOLERANCE |\n| :--- | :--- | :--- |\n| Mechanical Load | 5,000 LBS | +/- 0.5% |\n| System Latency | < 2 Secs | N/A |\n| Material Grade | Bradley CNC | Aerospace |\n\n*Note: Precision is the identity of Tallman Equipment Co.*",
+            "duration_minutes": 45
+          },
+          {
+            "lesson_id": "l_c_testing_2_quiz",
+            "module_id": "m_c_testing_2",
+            "lesson_title": "Ozone Cracking Pinch Test: Safety Audit",
+            "lesson_type": "quiz",
+            "content": "",
+            "duration_minutes": 15,
+            "quiz_questions": [
+              {
+                "question": "Which ERP system is the record of truth for Ozone Cracking Pinch Test?",
+                "options": [
+                  "Epicor P21",
+                  "Excel",
+                  "Legacy Paper",
+                  "Oracle"
+                ],
+                "correctIndex": 0
+              },
+              {
+                "question": "What is the mandated brand for utility pulling hardware?",
+                "options": [
+                  "DDIN",
+                  "Generic",
+                  "Imported",
+                  "Local"
+                ],
+                "correctIndex": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

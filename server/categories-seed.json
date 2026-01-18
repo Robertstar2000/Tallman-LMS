@@ -1,0 +1,22 @@
+[
+  {
+    "id": "tech",
+    "name": "Engineering & Tech",
+    "icon": ""
+  },
+  {
+    "id": "business",
+    "name": "Strategy & Leadership",
+    "icon": ""
+  },
+  {
+    "id": "safety",
+    "name": "Health & Safety",
+    "icon": ""
+  },
+  {
+    "id": "compliance",
+    "name": "Regulatory",
+    "icon": ""
+  }
+]
