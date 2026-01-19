@@ -13,7 +13,7 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
  * Utility to handle exponential backoff for API rate limits (429)
  * and structural failures (like malformed JSON)
  */
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 2000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 5000): Promise<T> {
   let lastError: any;
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -21,12 +21,12 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay =
     } catch (error: any) {
       lastError = error;
       const isRateLimit = error?.message?.includes('429') || error?.status === 429;
-      // Also retry if we specifically hit a structural sync failure (LLM cut off JSON)
       const isStructuralFailure = error?.message?.includes('Architectural Sync Failure');
+      const isTimeout = error?.message?.toLowerCase().includes('timeout') || error?.message?.includes('DEADLINE_EXCEEDED') || error?.name === 'AbortError';
 
-      if ((isRateLimit || isStructuralFailure) && i < maxRetries - 1) {
+      if ((isRateLimit || isStructuralFailure || isTimeout) && i < maxRetries - 1) {
         const delay = initialDelay * Math.pow(2, i);
-        console.warn(`${isRateLimit ? 'Rate limit' : 'Architectural failure'} hit. Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
+        console.warn(`${isTimeout ? 'Timeout' : isRateLimit ? 'Rate limit' : 'Architectural failure'} hit. Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -42,7 +42,7 @@ const cleanJsonResponse = (text: string): string => {
   // Remove markdown block wrappers regardless of content
   let cleaned = text.replace(/```json\s*|```/g, "").trim();
 
-  // Find the first and last structural characters
+  // Find the first structural character
   const firstBrace = cleaned.indexOf('{');
   const firstBracket = cleaned.indexOf('[');
   let start = -1;
@@ -52,37 +52,61 @@ const cleanJsonResponse = (text: string): string => {
     start = firstBracket;
   }
 
-  const lastBrace = cleaned.lastIndexOf('}');
-  const lastBracket = cleaned.lastIndexOf(']');
-  let end = -1;
-  if (lastBrace !== -1 && lastBrace > lastBracket) {
-    end = lastBrace;
-  } else if (lastBracket !== -1) {
-    end = lastBracket;
+  if (start === -1) {
+    // Stage 3: Brute Force Extraction if no standard start found
+    const match = cleaned.match(/\{(?:.*)\}/s);
+    if (match) return match[0];
+    return "{}";
   }
 
-  if (start !== -1 && end !== -1 && end > start) {
-    cleaned = cleaned.substring(start, end + 1);
+  cleaned = cleaned.substring(start);
+
+  // Auto-Repair Truncated JSON
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const char = cleaned[i];
+    if (char === '"' && !escaped) inString = !inString;
+    if (!inString) {
+      if (char === '{' || char === '[') stack.push(char === '{' ? '}' : ']');
+      else if (char === '}' || char === ']') {
+        if (stack.length > 0 && stack[stack.length - 1] === char) stack.pop();
+      }
+    }
+    escaped = char === '\\' && !escaped;
   }
 
-  // Handle common LLM JSON malformations in long strings
-  // 1. Remove trailing commas before closing braces/brackets
-  cleaned = cleaned.replace(/,(\s*[\]}])/g, "$1");
+  // Handle Truncation
+  if (stack.length > 0) {
+    let repair = cleaned.trim();
+    // If we're inside a string, we MUST close it first
+    if (inString) repair += '"';
 
-  // 2. Remove illegal control characters that crash JSON.parse
-  cleaned = cleaned.replace(/[\u0000-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, "");
+    // Remove any trailing commas or colons that would make the closure invalid
+    repair = repair.replace(/[,:\s]+$/, "");
 
-  return cleaned.trim();
+    // Append necessary closures
+    repair += stack.reverse().join("");
+    cleaned = repair;
+  }
+
+  // Final sanitization of common JSON errors
+  return cleaned
+    .replace(/,(\s*[\]}])/g, "$1") // Remove trailing commas
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
+    .trim();
 };
 
 const SYSTEM_CONTEXT = `You are the Lead Industrial Architect for ${tallmanData.company.legal_name}. 
 Your expertise covers:
 - Epertise to generate instructional courses on a varity of supjects. When relevent to the course tipic include:
-- Electrical Transmission/Distribution engineering.
-- Industrial SOP development.
-- Enterprise systems: Epicor P21 (ERP), RubberTree (CRM).
-- Tooling brands: DDIN, Bradley Machining (CNC Precision).
-- Operational locations: Addison (HQ), Columbus, Lake City.`;
+-- Electrical Transmission/Distribution engineering.
+-- Industrial SOP development.
+-- Enterprise systems: Epicor P21 (ERP), RubberTree (CRM).
+-- Tooling brands: DDIN, Bradley Machining (CNC Precision).
+-- Operational locations: Addison (HQ), Columbus, Lake City.`;
 
 export const generateCourseOutline = async (topic: string) => {
   return withRetry(async () => {
@@ -90,13 +114,13 @@ export const generateCourseOutline = async (topic: string) => {
       const model = genAI.getGenerativeModel({
         model: "gemini-3-flash-preview",
         systemInstruction: SYSTEM_CONTEXT
-      });
+      }, { timeout: 300000 });
       const result = await model.generateContent({
         contents: [{
           role: 'user', parts: [{
             text: `Draft an 12-unit technical curriculum outline for: "${topic}". 
         Each unit needs a title and a brief description.
-        Return as JSON: { "titles": ["Unit 1", "Unit 2", ...], "descriptions": ["Desc 1", "Desc 2", ...] }` }]
+        Return as valid JSON: { "titles": ["Unit 1", "Unit 2", ...], "descriptions": ["Desc 1", "Desc 2", ...] }` }]
         }],
         generationConfig: {
           responseMimeType: "application/json"
@@ -104,8 +128,11 @@ export const generateCourseOutline = async (topic: string) => {
       });
       const cleaned = cleanJsonResponse(result.response.text() || "");
       return JSON.parse(cleaned);
-    } catch (error) {
-      console.error("Gemini Outline Error:", error);
+    } catch (error: any) {
+      const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
+      if (!isRetryable) {
+        console.error("Gemini Outline Critical Error:", error);
+      }
       throw error;
     }
   });
@@ -117,34 +144,43 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
       const model = genAI.getGenerativeModel({
         model: "gemini-3-flash-preview",
         systemInstruction: SYSTEM_CONTEXT
-      });
+      }, { timeout: 300000 }); // High-clearance 5-minute timeout
       const result = await model.generateContent({
         contents: [{
           role: 'user', parts: [{
             text: `Generate an exhaustive, instructional Technical Manual and a 3-question Quiz for the unit: "${courseTitle} - ${unitTitle}".
         
+        CRITICAL ARCHITECTURAL RULES:
+        1. YOU MUST OUTPUT VALID JSON.
+        2. ESCAPE ALL DOUBLE QUOTES INSIDE STRINGS USING \\".
+        3. ENSURE NEWLINES ARE REPRESENTED AS \\n.
+        
         REQUIREMENTS FOR THE MANUAL:
         - TARGET LENGTH: At least 2200 words. This must be an extremely dense, professional, and exhaustive instructional document.
-        - PRIMARY CONTENT FOCUS: The instructional content MUST be focused entirely on the specific bussiness or technical subject defined by the titles. You are teaching the science of the topic,and execution of this specific topic.
-        - OPERATIONAL WRAPPER (Contextual Grounding): Use the provided enterprise data ONLY as where relivent to the topic. This includes business info, ERP usage (Epicor P21), CRM logging (RubberTree), and specific tool brands (DDIN, Bradley Machining). Use these for explaining how the work is logged, what tools are used, and our corporate manufacturing standards.
-        - IMPORTANT: Do NOT use the company data as the primary subject matter. The primary subject matter is the topic.
-        - STRUCTURE: Use professional Markdown including:
-          1. Detailed Technical Table of Contents.
-          2. Comprehensive Subject Explanation & Technical Fundamentals.
-          3. Industry-Standard Best Practices .
-          5. Include where relivent Multi-phase Step-by-Step SOP (Standard Operating Procedure).
-          6. Technical Specifications.
-
+        - PRIMARY CONTENT FOCUS: The instructional content MUST be focused entirely on the specific bussiness or technical subject defined by the titles.
+        - OPERATIONAL WRAPPER: Integrate ${tallmanData.company.common_name} operational context (Epicor P21, RubberTree, DDIN) only where relevant for logging or tooling.
+        - STRUCTURE: Use professional Markdown with:
+          - Table of Contents
+          - Technical Fundamentals
+          - Multi-phase Phase SOPs
+          - Industry Standards
+          - Troubleshooting/Specs
+          
         REQUIREMENTS FOR THE QUIZ:
-        - 3 multiple-choice questions with 4 options each and a correctIndex.
-        - The questions should be based on the content of the manual and be displayed in random order. with only one correct answer. 
+        - 3 multiple-choice questions with 4 options each and a correctIndex (0-3).
         
-        Return JSON: { "content": "Markdown...", "quiz": [{"question": "...", "options": ["...", "..."], "correctIndex": 0}, ...] }` }]
+        Return JSON structure: 
+        { 
+          "content": "Full Markdown Manual here...", 
+          "quiz": [
+            {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0}
+          ] 
+        }` }]
         }],
         generationConfig: {
           responseMimeType: "application/json",
           maxOutputTokens: 8192,
-          temperature: 0.7
+          temperature: 0.5
         }
       });
       const text = result.response.text();
@@ -152,14 +188,34 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
       try {
         return JSON.parse(cleaned);
       } catch (e: any) {
+        // Fallback: If JSON.parse still fails, try extraction
+        console.warn("Attempting Regex-based Course Reconstruction...");
+        const contentMatch = cleaned.match(/"content":\s*"(.*)",\s*"quiz":/s);
+        const quizMatch = cleaned.match(/"quiz":\s*(\[.*\])/s);
+
+        if (contentMatch && quizMatch) {
+          try {
+            return {
+              content: contentMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'),
+              quiz: JSON.parse(cleanJsonResponse(quizMatch[1]))
+            };
+          } catch (innerE) {
+            // Continue to throw if extraction also fails
+          }
+        }
+
         console.error("Architectural JSON Sync Failed. Content length:", cleaned?.length);
+        console.error("Raw Content Sample:", cleaned?.substring(cleaned.length - 100));
         throw new Error(`Architectural Sync Failure: Malformed JSON output. The document density was too high for reliable parsing. Try Regenerating.`);
       }
-    } catch (error) {
-      console.error("Gemini Content Error:", error);
+    } catch (error: any) {
+      const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
+      if (!isRetryable) {
+        console.error("Gemini Content Critical Error:", error);
+      }
       throw error;
     }
-  }, 3, 5000);
+  }, 7, 10000); // 7 retries with 10s initial delay
 };
 
 export const generateCourseThumbnail = async (topic: string) => {
@@ -169,7 +225,7 @@ export const generateCourseThumbnail = async (topic: string) => {
       // for direct, autonomous industrial visual synthesis.
       const model = genAI.getGenerativeModel({
         model: "gemini-3-pro-image-preview"
-      });
+      }, { timeout: 300000 });
 
       const prompt = `Professional cinematic industrial photography of ${topic}. 
       High-tech technical equipment, 8k resolution, professional lighting, sharp metallic textures, depth of field. 

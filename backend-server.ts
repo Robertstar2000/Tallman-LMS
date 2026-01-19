@@ -60,11 +60,13 @@ class TallmanAPIClient {
   }
 
   async signup(displayName: string, email: string, passwordHash: string): Promise<User> {
-    // Signup not fully implemented in backend yet, but here's the placeholder
-    return this.fetchAPI('/auth/signup', {
+    const data = await this.fetchAPI('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ displayName, email, password: passwordHash })
     });
+    localStorage.setItem('tallman_auth_token', data.token);
+    localStorage.setItem('tallman_user_session', JSON.stringify(data.user));
+    return data.user;
   }
 
   async getCurrentSession(): Promise<User | null> {

@@ -118,11 +118,11 @@ const Layout: React.FC<{
         <div className="p-4 border-t border-slate-800">
           <div className="flex items-center space-x-3 bg-slate-800/50 p-3 rounded-2xl border border-slate-800 mb-4">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-xs font-black text-white shadow-lg border border-indigo-500/50">
-              {user.display_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {user.display_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs font-black truncate">{user.display_name}</p>
-              <p className="text-[9px] text-slate-500 uppercase font-black">{user.roles.join(' / ')}</p>
+              <p className="text-xs font-black truncate">{user.display_name || 'Personnel'}</p>
+              <p className="text-[9px] text-slate-500 uppercase font-black">{user.roles?.join(' / ') || 'Access Pending'}</p>
             </div>
           </div>
           <button onClick={onLogout} className="w-full py-3 bg-rose-500/10 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-colors">Sign Out</button>
@@ -175,10 +175,11 @@ export default function App() {
 
   if (!user) return <Auth onLogin={handleLogin} />;
 
-  const isOnlyHold = user.roles.length === 1 && user.roles[0] === UserRole.HOLD;
+  const roles = user.roles || [];
+  const isOnlyHold = roles.length === 1 && roles[0] === UserRole.HOLD;
   if (isOnlyHold) return <HoldScreen user={user} onLogout={handleLogout} />;
 
-  const effectiveAdmin = (user.roles.some(r => [UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.MANAGER].includes(r))) && !isLearnerMode;
+  const effectiveAdmin = (roles.some(r => [UserRole.ADMIN, UserRole.INSTRUCTOR, UserRole.MANAGER].includes(r))) && !isLearnerMode;
 
   return (
     <HashRouter>

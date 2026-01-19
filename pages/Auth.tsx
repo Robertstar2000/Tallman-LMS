@@ -14,6 +14,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConnectionConfig, setShowConnectionConfig] = useState(false);
+  const [apiOverride, setApiOverride] = useState(localStorage.getItem('tallman_api_override') || '');
 
   const backdoorCounter = useRef(0);
   const isBackdoorProcessing = useRef(false);
@@ -101,18 +103,22 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           <div className="flex bg-slate-100 rounded-[1.5rem] p-1.5 mb-10 relative">
             <button
               onClick={() => setIsSignup(false)}
-              className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest z-10 transition-all duration-300 ${!isSignup ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3.5 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest z-10 transition-all duration-300 ${!isSignup ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
             >
               Sign In
             </button>
             <button
               onClick={() => setIsSignup(true)}
-              className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest z-10 transition-all duration-300 ${isSignup ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 py-3.5 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest z-10 transition-all duration-300 ${isSignup ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
             >
               Request Access
             </button>
             <div
-              className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white rounded-xl shadow-md transition-all duration-500 ease-out ${isSignup ? 'translate-x-[100%] !bg-indigo-600' : 'translate-x-0'}`}
+              className={`absolute top-1.5 bottom-1.5 transition-all duration-500 ease-out rounded-xl shadow-md ${isSignup ? 'bg-indigo-600' : 'bg-white'}`}
+              style={{
+                width: 'calc(50% - 6px)',
+                left: isSignup ? '50%' : '6px'
+              }}
             />
           </div>
 
@@ -168,7 +174,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isProcessing}
-              className={`w-full py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.25em] shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50 relative overflow-hidden group/btn ${isSignup ? 'bg-indigo-600' : 'bg-slate-900'} text-white`}
+              className={`w-full py-5 flex items-center justify-center rounded-[1.5rem] font-black text-xs uppercase tracking-[0.25em] shadow-2xl transition-all active:scale-[0.98] disabled:opacity-50 relative overflow-hidden group/btn ${isSignup ? 'bg-indigo-600' : 'bg-slate-900'} text-white`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
               {isProcessing ? (
@@ -177,15 +183,55 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                   <span>Authenticating...</span>
                 </div>
               ) : (
-                isSignup ? 'Initialize Path' : 'Access Hub'
+                isSignup ? 'Request Access' : 'Access Hub'
               )}
             </button>
           </form>
 
-          <div className="mt-10">
+          <div className="mt-10 space-y-4">
             <p className="text-center text-slate-400 text-[9px] font-black uppercase tracking-[0.3em] select-none">
               Governance Systems <span onClick={handleHiddenTrigger} className="cursor-default hover:text-indigo-600 transition-colors">Enabled</span>
+              {" | "}
+              <span onClick={() => setShowConnectionConfig(!showConnectionConfig)} className="cursor-pointer hover:text-indigo-600 transition-colors">Network Config</span>
             </p>
+
+            {showConnectionConfig && (
+              <div className="p-6 bg-slate-50 rounded-[2rem] border-2 border-slate-100 animate-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-sm">🌐</div>
+                  <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Gateway Override</p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="https://new-tunnel.pinggy.io"
+                  className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 outline-none focus:border-indigo-500 mb-3"
+                  value={apiOverride}
+                  onChange={(e) => setApiOverride(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (apiOverride) localStorage.setItem('tallman_api_override', apiOverride);
+                      else localStorage.removeItem('tallman_api_override');
+                      window.location.reload();
+                    }}
+                    className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                  >
+                    Apply & Sync
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('tallman_api_override');
+                      window.location.reload();
+                    }}
+                    className="px-4 py-2 bg-rose-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <p className="text-[8px] font-bold text-slate-400 uppercase mt-3 text-center">Current: {localStorage.getItem('tallman_api_override') || 'http://localhost:3185'}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
