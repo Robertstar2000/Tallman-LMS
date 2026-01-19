@@ -386,10 +386,19 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, (re
 
 // --- Enrollment Routes ---
 
+const hydrateEnrollment = (enrollment: any) => {
+    if (!enrollment) return null;
+    const completions = db.prepare('SELECT lesson_id FROM lesson_completions WHERE user_id = ?').all(enrollment.user_id) as { lesson_id: string }[];
+    return {
+        ...enrollment,
+        completed_lesson_ids: completions.map(c => c.lesson_id)
+    };
+};
+
 app.get('/api/enrollments', authenticateToken, (req: any, res) => {
     try {
         const enrollments = db.prepare('SELECT * FROM enrollments WHERE user_id = ?').all(req.user.userId);
-        res.json(enrollments);
+        res.json(enrollments.map(e => hydrateEnrollment(e)));
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -398,7 +407,7 @@ app.get('/api/enrollments', authenticateToken, (req: any, res) => {
 app.get('/api/admin/enrollments', authenticateToken, requireInstructorOrAdmin, (req, res) => {
     try {
         const enrollments = db.prepare('SELECT * FROM enrollments').all();
-        res.json(enrollments);
+        res.json(enrollments.map(e => hydrateEnrollment(e)));
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -412,17 +421,52 @@ app.post('/api/enrollments', authenticateToken, (req: any, res) => {
 
     try {
         const existing = db.prepare('SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?').get(userId, courseId);
-        if (existing) return res.json(existing);
+        if (existing) return res.json(hydrateEnrollment(existing));
 
         db.prepare('INSERT INTO enrollments (enrollment_id, user_id, course_id, status, enrolled_at) VALUES (?, ?, ?, ?, ?)')
             .run(enrollmentId, userId, courseId, 'active', enrolledAt);
 
         const newEnrollment = db.prepare('SELECT * FROM enrollments WHERE enrollment_id = ?').get(enrollmentId);
-        res.json(newEnrollment);
+        res.json(hydrateEnrollment(newEnrollment));
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+const checkAndAwardBadges = (userId: string) => {
+    try {
+        const user = db.prepare('SELECT points, level FROM users WHERE user_id = ?').get(userId) as any;
+        const currentBadges = db.prepare('SELECT badge_id FROM user_badges WHERE user_id = ?').all(userId) as { badge_id: string }[];
+        const badgeIds = currentBadges.map(b => b.badge_id);
+
+        const award = (badgeId: string) => {
+            if (!badgeIds.includes(badgeId)) {
+                db.prepare('INSERT OR IGNORE INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?)')
+                    .run(userId, badgeId, new Date().toISOString());
+                console.log(`Badge Awarded: ${badgeId} to User ${userId}`);
+            }
+        };
+
+        // Level Milestones
+        if (user.level >= 5) award('b_level5');
+        if (user.level >= 10) award('b_level10');
+
+        // Course Completion
+        const completedCourses = db.prepare("SELECT COUNT(*) as count FROM enrollments WHERE user_id = ? AND status = 'completed'").get(userId) as { count: number };
+        if (completedCourses.count >= 1) award('b_complete');
+
+        // Specific Badges
+        const safetyComplete = db.prepare(`
+            SELECT COUNT(*) as count FROM enrollments e
+            JOIN courses c ON e.course_id = c.course_id
+            WHERE e.user_id = ? AND e.status = 'completed' AND c.course_name LIKE '%Safety%'
+        `).get(userId) as { count: number };
+        if (safetyComplete.count >= 1) award('b1');
+
+    } catch (e) {
+        console.error("Badge Awarding Failure:", e);
+    }
+};
 
 app.post('/api/enrollments/:id/progress', authenticateToken, (req: any, res) => {
     const { id } = req.params;
@@ -461,8 +505,11 @@ app.post('/api/enrollments/:id/progress', authenticateToken, (req: any, res) => 
         // Recalculate level based on XP (e.g. 100 XP per level)
         db.prepare('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?').run(userId);
 
+        // Run badge audit
+        checkAndAwardBadges(userId);
+
         const updated = db.prepare('SELECT * FROM enrollments WHERE enrollment_id = ?').get(id);
-        res.json(updated);
+        res.json(hydrateEnrollment(updated));
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -503,8 +550,12 @@ app.post('/api/enrollments/:id/quiz', authenticateToken, (req: any, res) => {
             db.prepare('UPDATE users SET points = points + 20 WHERE user_id = ?').run(userId);
             // Recalculate level
             db.prepare('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?').run(userId);
+
+            // Run badge audit
+            checkAndAwardBadges(userId);
         }
-        res.json({ message: 'Quiz attempt recorded', passed });
+        const updated = db.prepare('SELECT * FROM enrollments WHERE enrollment_id = ?').get(id);
+        res.json(hydrateEnrollment(updated));
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

@@ -104,7 +104,10 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
   const handleQuizSubmit = async () => {
     if (!currentLesson?.quiz_questions || !enrollment) return;
     const score = userAnswers.reduce((acc, ans, idx) => {
-      return ans === currentLesson.quiz_questions![idx].correctIndex ? acc + 1 : acc;
+      const q = currentLesson.quiz_questions![idx];
+      // Syncing with DB schema where it's stored as 'correct_index'
+      const correctIdx = q.correct_index !== undefined ? q.correct_index : (q as any).correctIndex;
+      return ans === correctIdx ? acc + 1 : acc;
     }, 0);
 
     setQuizScore(score);
@@ -123,9 +126,17 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
 
   const renderDocumentContent = (content: string) => {
     const lines = content.split('\n');
+    const filteredLines: string[] = [];
+
+    // Stop rendering if we hit a manually added 'Quiz' or 'Audit' header in the content
+    for (const line of lines) {
+      if (line.match(/^#+ (Quiz|Audit|Assessment)/i)) break;
+      filteredLines.push(line);
+    }
+
     return (
       <div className="space-y-6 text-slate-800">
-        {lines.map((line, idx) => {
+        {filteredLines.map((line, idx) => {
           if (line.startsWith('# ')) return <h1 key={idx} className="text-4xl font-black tracking-tighter uppercase italic border-b-4 border-indigo-600 pb-4 mb-8">{line.substring(2)}</h1>;
           if (line.startsWith('## ')) return <h2 key={idx} className="text-2xl font-black text-indigo-900 tracking-tight uppercase mt-12 mb-4">{line.substring(3)}</h2>;
           if (line.startsWith('### ')) return <h3 key={idx} className="text-xl font-black text-slate-900 uppercase tracking-widest mt-8 mb-4">{line.substring(4)}</h3>;

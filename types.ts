@@ -56,6 +56,7 @@ export interface QuizQuestion {
   question: string;
   options: string[];
   correctIndex: number;
+  correct_index?: number; // Backend schema compatibility
 }
 
 export interface Lesson {

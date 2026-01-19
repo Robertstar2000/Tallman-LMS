@@ -39,7 +39,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, initialDelay =
 const cleanJsonResponse = (text: string): string => {
   if (!text) return "{}";
 
-  // Remove markdown block wrappers regardless of content
+  // Stage 1: Strip markdown and sanitize broad control characters
   let cleaned = text.replace(/```json\s*|```/g, "").trim();
 
   // Find the first structural character
@@ -61,33 +61,44 @@ const cleanJsonResponse = (text: string): string => {
 
   cleaned = cleaned.substring(start);
 
-  // Auto-Repair Truncated JSON
+  // Stage 2: Structural Repair for Truncation/Malformed Strings
   const stack: string[] = [];
   let inString = false;
   let escaped = false;
+  let result = "";
 
   for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned[i];
-    if (char === '"' && !escaped) inString = !inString;
+
+    // Detect string boundaries
+    if (char === '"' && !escaped) {
+      inString = !inString;
+    }
+
+    // Handle unescaped newlines inside strings by converting to \n
+    if (inString && (char === '\n' || char === '\r')) {
+      result += "\\n";
+      continue;
+    }
+
     if (!inString) {
       if (char === '{' || char === '[') stack.push(char === '{' ? '}' : ']');
       else if (char === '}' || char === ']') {
         if (stack.length > 0 && stack[stack.length - 1] === char) stack.pop();
       }
     }
+
+    result += char;
     escaped = char === '\\' && !escaped;
   }
+
+  cleaned = result;
 
   // Handle Truncation
   if (stack.length > 0) {
     let repair = cleaned.trim();
-    // If we're inside a string, we MUST close it first
     if (inString) repair += '"';
-
-    // Remove any trailing commas or colons that would make the closure invalid
     repair = repair.replace(/[,:\s]+$/, "");
-
-    // Append necessary closures
     repair += stack.reverse().join("");
     cleaned = repair;
   }
@@ -95,7 +106,7 @@ const cleanJsonResponse = (text: string): string => {
   // Final sanitization of common JSON errors
   return cleaned
     .replace(/,(\s*[\]}])/g, "$1") // Remove trailing commas
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : "") // Preserve standard whitespace
     .trim();
 };
 
@@ -165,6 +176,7 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
           - Multi-phase Phase SOPs
           - Industry Standards
           - Troubleshooting/Specs
+        - EXCLUSION: DO NOT include the Quiz questions or answers within the "content" (Manual) field itself. The quiz MUST only exist as a separate object in the "quiz" array.
           
         REQUIREMENTS FOR THE QUIZ:
         - 3 multiple-choice questions with 4 options each and a correctIndex (0-3).

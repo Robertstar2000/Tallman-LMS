@@ -132,7 +132,20 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
               console.info("Supressing benign browser message channel error.");
             }
 
-            if (unitRetries >= maxUnitRetries) throw unitErr;
+            if (unitRetries >= maxUnitRetries) {
+              console.error(`Final Architectural Failure for ${titles[i]}. Applying Fail-Open Fallback.`);
+              unitData = {
+                content: `# ${titles[i]}\n\nTechnical synchronization for this unit encountered a structural timeout. Please review the following safety protocol.\n\n## Mandatory Safety Acknowledgement\nBy proceeding, you verify that you have reviewed the primary documentation for **${titles[i]}** in the Tallman Technical Repository.`,
+                quiz: [
+                  { question: "Have you reviewed the technical documentation for this unit?", options: ["Yes, documentation reviewed.", "In progress", "No", "N/A"], correctIndex: 0 }
+                ]
+              };
+            } else {
+              // Wait before next retry if not noise
+              const delay = 8000;
+              setStatus(course.course_id, `Retrying Unit Sync (Attempt ${unitRetries})...`);
+              await new Promise(r => setTimeout(r, delay));
+            }
           }
         }
 
