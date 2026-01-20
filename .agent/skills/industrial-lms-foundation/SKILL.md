@@ -33,7 +33,7 @@ const translateParams = (text: string) => {
 - **Postgres Nexus**: Image `postgres:15-alpine`.
 - **Sequential Schema Protocol**: Postgres drivers often fail on multi-statement strings. Always `.split(';')` and execute sequentially during `initDb`.
 - **Relational Integrity**: Use `ON UPDATE CASCADE` for all identity references to allow seamless migration of technician IDs without violating foreign keys.
-- **Node Environment**: Use `node:20-bullseye-slim` for mission-critical stability and glibc compatibility.
+- **Fault-Tolerant Seeding**: Wrap dependent record insertions (Mentorship, User Badges) in diagnostic `try-catch` blocks. This ensures that a single foreign key mismatch does not crash the entire orchestration, allowing the core infrastructure (Courses, Modules, Lessons, Quizzes) to be established.
 
 ---
 

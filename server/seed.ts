@@ -128,16 +128,22 @@ async function seed() {
         await db.run('INSERT INTO forum_posts (id, author_name, author_avatar, title, content, category, replies, is_pinned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING', [p.id, p.author_name, p.author_avatar, p.title, p.content, p.category, p.replies, p.is_pinned ? 1 : 0, p.timestamp]);
     }
 
-    /* 
     // Seed Mentorship
     for (const m of mentorshipLogs) {
-        await db.run('INSERT INTO mentorship_logs (id, mentor_id, mentee_id, mentee_name, hours, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING', [m.id, m.mentor_id, m.mentee_id, m.mentee_name, m.hours, m.date, m.notes]);
+        try {
+            await db.run('INSERT INTO mentorship_logs (id, mentor_id, mentee_id, mentee_name, hours, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING', [m.id, m.mentor_id, m.mentee_id, m.mentee_name, m.hours, m.date, m.notes]);
+        } catch (e) {
+            console.error(`⚠️  RELATIONAL FAULT: Mentorship log ${m.id} failed to bind. Skipping.`);
+        }
     }
-    */
 
     // Seed User Badges
     for (const ub of userBadges) {
-        await db.run('INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [ub.user_id, ub.badge_id, ub.earned_at]);
+        try {
+            await db.run('INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [ub.user_id, ub.badge_id, ub.earned_at]);
+        } catch (e) {
+            console.error(`⚠️  RELATIONAL FAULT: User badge assignment for ${ub.user_id} failed to bind. Skipping.`);
+        }
     }
 
     // Seed Courses, Modules, and Lessons
