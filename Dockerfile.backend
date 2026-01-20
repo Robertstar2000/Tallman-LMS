@@ -1,0 +1,29 @@
+FROM node:20-bullseye-slim
+
+# Install build dependencies for better-sqlite3
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for tsx)
+RUN npm install
+
+# Copy the entire project
+COPY . .
+
+# Expose the API Nexus port
+EXPOSE 3185
+
+# Ensure entrypoint is executable
+RUN chmod +x docker-entrypoint.sh
+
+# Bootstrap and start API
+ENTRYPOINT ["./docker-entrypoint.sh"]

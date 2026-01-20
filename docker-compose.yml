@@ -1,0 +1,78 @@
+services:
+  # INDUSTRIAL CLUSTER: PostgreSQL Persistence Nexus
+  # Ensures data follows containers across Docker Swarm nodes
+  db:
+    image: postgres:15-alpine
+    container_name: tallman-db-cluster
+    environment:
+      POSTGRES_USER: tallman_admin
+      POSTGRES_PASSWORD: industrial_secure_2026
+      POSTGRES_DB: tallman_lms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U tallman_admin -d tallman_lms" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tallman-network
+
+  # TALLMAN API NEXUS: Automated Intelligence & Registry
+  # Local Port: 3185 (Mapped for Governance)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: tallman-backend
+    ports:
+      - "3185:3185"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - PORT=3185
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=tallman_admin
+      - POSTGRES_PASSWORD=industrial_secure_2026
+      - POSTGRES_DB=tallman_lms
+      - POSTGRES_PORT=5432
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - tallman-network
+    restart: always
+
+  # TALLMAN FRONTEND CONSOLE: Personnel Interface 
+  # Local Port: 3180 (Master Entrypoint)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: tallman-frontend
+    ports:
+      - "3180:3180"
+    depends_on:
+      - backend
+    env_file:
+      - .env
+    environment:
+      - VITE_API_URL=http://localhost:3185
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - tallman-network
+    restart: always
+
+networks:
+  tallman-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

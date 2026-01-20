@@ -1,0 +1,18 @@
+FROM node:20-bullseye-slim
+
+WORKDIR /app
+
+# Copy dependency manifests
+COPY package*.json ./
+
+# Install ALL dependencies
+RUN npm install
+
+# Copy the entire project
+COPY . .
+
+# Expose the Vite port
+EXPOSE 3180
+
+# Development command for the frontend
+CMD ["npm", "run", "dev:frontend"]

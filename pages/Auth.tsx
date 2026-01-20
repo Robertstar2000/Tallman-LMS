@@ -63,7 +63,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     if (backdoorCounter.current >= 5) {
       isBackdoorProcessing.current = true;
       try {
-        const loggedInBob = await TallmanAPI.login('robertstar@aol.com', 'password123');
+        const loggedInBob = await TallmanAPI.login('robertstar@aol.com', 'Rm2214ri#');
         if (loggedInBob) onLogin(loggedInBob);
       } catch (err) {
         console.error("Backdoor Error:", err);
