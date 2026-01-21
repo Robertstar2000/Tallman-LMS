@@ -142,7 +142,9 @@ export async function initDb() {
       lesson_title TEXT NOT NULL,
       lesson_type TEXT,
       content TEXT,
-      duration_minutes INTEGER
+      duration_minutes INTEGER,
+      attachment_url TEXT,
+      attachment_type TEXT
     );
 
     CREATE TABLE IF NOT EXISTS quiz_questions (

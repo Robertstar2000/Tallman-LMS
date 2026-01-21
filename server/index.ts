@@ -389,7 +389,7 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
                         }
 
                         for (const lesson of mod.lessons) {
-                            await db.run('INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO UPDATE SET lesson_title = excluded.lesson_title, lesson_type = excluded.lesson_type, content = excluded.content, duration_minutes = excluded.duration_minutes', [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes]);
+                            await db.run('INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes, attachment_url, attachment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO UPDATE SET lesson_title = excluded.lesson_title, lesson_type = excluded.lesson_type, content = excluded.content, duration_minutes = excluded.duration_minutes, attachment_url = excluded.attachment_url, attachment_type = excluded.attachment_type', [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes, lesson.attachment_url || null, lesson.attachment_type || null]);
 
                             if (lesson.quiz_questions) {
                                 await db.run('DELETE FROM quiz_questions WHERE lesson_id = ?', [lesson.lesson_id]);

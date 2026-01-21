@@ -65,6 +65,8 @@ export interface Lesson {
   lesson_title: string;
   lesson_type: 'video' | 'document' | 'quiz' | 'discussion';
   content?: string;
+  attachment_url?: string;
+  attachment_type?: 'pdf' | 'image' | 'video';
   quiz_questions?: QuizQuestion[];
   duration_minutes: number;
 }

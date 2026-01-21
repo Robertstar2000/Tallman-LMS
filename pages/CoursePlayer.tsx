@@ -18,6 +18,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [showCompletion, setShowCompletion] = useState(false);
   const [failedAttempt, setFailedAttempt] = useState(false);
+  const [showAttachment, setShowAttachment] = useState(false);
 
   useEffect(() => {
     const initPlayer = async () => {
@@ -222,6 +223,24 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                     <div className="bg-white text-slate-800 whitespace-pre-wrap font-sans">
                       {renderDocumentContent(currentLesson.content || "Archiving error: Material missing.")}
                     </div>
+
+                    {currentLesson.attachment_url && (
+                      <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                            {currentLesson.attachment_type === 'pdf' ? <span className="text-rose-500 font-black">PDF</span> : currentLesson.attachment_type === 'video' ? <span className="text-indigo-600 font-black">MP4</span> : <span className="text-emerald-500 font-black">IMG</span>}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase">Technical Attachment</p>
+                            <h4 className="text-lg font-black text-slate-900 leading-tight">Unit Schema & References</h4>
+                          </div>
+                        </div>
+                        <button onClick={() => setShowAttachment(true)} className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
+                          Launch Viewer
+                        </button>
+                      </div>
+                    )}
+
                     <button onClick={() => { handleMarkComplete(currentLesson.lesson_id); handleProceed(); }} className="w-full md:w-auto px-12 py-6 bg-emerald-600 text-white rounded-2xl font-black text-xl hover:bg-emerald-700 shadow-xl transition-all">Accept SOP & Continue</button>
                   </div>
                 ) : (
@@ -237,6 +256,23 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                           setUserAnswers([]);
                           setFailedAttempt(false);
                         }} className="mt-4 px-8 py-3 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all">Review Training Manual</button>
+                      </div>
+                    )}
+
+                    {currentLesson.attachment_url && (
+                      <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                            {currentLesson.attachment_type === 'pdf' ? <span className="text-rose-500 font-black text-[10px]">PDF</span> : currentLesson.attachment_type === 'video' ? <span className="text-indigo-600 font-black text-[10px]">VIDEO</span> : <span className="text-emerald-500 font-black text-[10px]">IMAGE</span>}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase mb-1">Audit Reference Asset</p>
+                            <p className="text-xs font-bold text-slate-600 leading-tight">Required for Technical Verification</p>
+                          </div>
+                        </div>
+                        <button onClick={() => setShowAttachment(true)} className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
+                          Open Schematic
+                        </button>
                       </div>
                     )}
 
@@ -303,6 +339,44 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
           ))}
         </div>
       </aside>
+
+      {showAttachment && currentLesson && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-slate-900/40 backdrop-blur-md">
+          <div className="bg-white rounded-[3rem] w-full max-w-6xl h-[90vh] shadow-2xl border-4 border-slate-900 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <header className="bg-slate-900 p-8 text-white flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter">Technical Asset Viewer</h2>
+                <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">Registry: {currentLesson.lesson_title} Attachment</p>
+              </div>
+              <button
+                onClick={() => setShowAttachment(false)}
+                className="w-12 h-12 bg-white/10 hover:bg-rose-500 rounded-2xl flex items-center justify-center transition-all group"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-hidden bg-slate-100 p-4">
+              {currentLesson.attachment_type === 'pdf' ? (
+                <iframe src={currentLesson.attachment_url} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
+              ) : currentLesson.attachment_type === 'video' ? (
+                <div className="w-full h-full flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
+                  <video controls src={currentLesson.attachment_url} className="max-w-full max-h-full" />
+                </div>
+              ) : (
+                <div className="w-full h-full p-8 overflow-auto flex items-center justify-center bg-white rounded-2xl shadow-inner">
+                  <img src={currentLesson.attachment_url} alt="Technical Schematic" className="max-w-full max-h-full rounded shadow-xl object-contain" />
+                </div>
+              )}
+            </div>
+
+            <footer className="p-6 bg-white border-t flex justify-center">
+              <button onClick={() => setShowAttachment(false)} className="px-12 py-4 bg-slate-100 text-slate-900 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-200 transition-all">Close Workspace</button>
+            </footer>
+          </div>
+        </div>
+      )}
+
       <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }`}</style>
     </div>
   );
