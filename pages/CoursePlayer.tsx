@@ -185,6 +185,15 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
     </div>
   );
 
+  let attachmentToDisplay: any = null;
+  if (currentLesson) {
+    if (currentLesson.attachment_url) {
+      attachmentToDisplay = { url: currentLesson.attachment_url, type: currentLesson.attachment_type || 'pdf', label: 'Unit Attachment' };
+    } else if (course.attachment_url) {
+      attachmentToDisplay = { url: course.attachment_url, type: course.attachment_type || 'pdf', label: 'Global Course Attachment' };
+    }
+  }
+
   return (
     <div className="h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
       <div className="flex-1 flex flex-col bg-white rounded-[2.5rem] shadow-sm border overflow-hidden relative">
@@ -224,15 +233,15 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                       {renderDocumentContent(currentLesson.content || "Archiving error: Material missing.")}
                     </div>
 
-                    {currentLesson.attachment_url && (
+                    {attachmentToDisplay && (
                       <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                            {currentLesson.attachment_type === 'pdf' ? <span className="text-rose-500 font-black">PDF</span> : currentLesson.attachment_type === 'video' ? <span className="text-indigo-600 font-black">MP4</span> : <span className="text-emerald-500 font-black">IMG</span>}
+                            {attachmentToDisplay.type === 'pdf' ? <span className="text-rose-500 font-black">PDF</span> : attachmentToDisplay.type === 'video' ? <span className="text-indigo-600 font-black">MP4</span> : <span className="text-emerald-500 font-black">IMG</span>}
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase">Technical Attachment</p>
-                            <h4 className="text-lg font-black text-slate-900 leading-tight">Unit Schema & References</h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase">{attachmentToDisplay.label}</p>
+                            <h4 className="text-lg font-black text-slate-900 leading-tight">Technical Schema & References</h4>
                           </div>
                         </div>
                         <button onClick={() => setShowAttachment(true)} className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
@@ -259,14 +268,14 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                       </div>
                     )}
 
-                    {currentLesson.attachment_url && (
+                    {attachmentToDisplay && (
                       <div className="p-8 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                            {currentLesson.attachment_type === 'pdf' ? <span className="text-rose-500 font-black text-[10px]">PDF</span> : currentLesson.attachment_type === 'video' ? <span className="text-indigo-600 font-black text-[10px]">VIDEO</span> : <span className="text-emerald-500 font-black text-[10px]">IMAGE</span>}
+                            {attachmentToDisplay.type === 'pdf' ? <span className="text-rose-500 font-black text-[10px]">PDF</span> : attachmentToDisplay.type === 'video' ? <span className="text-indigo-600 font-black text-[10px]">VIDEO</span> : <span className="text-emerald-500 font-black text-[10px]">IMAGE</span>}
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase mb-1">Audit Reference Asset</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase mb-1">{attachmentToDisplay.label}</p>
                             <p className="text-xs font-bold text-slate-600 leading-tight">Required for Technical Verification</p>
                           </div>
                         </div>
@@ -346,7 +355,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
             <header className="bg-slate-900 p-8 text-white flex items-center justify-between">
               <div>
                 <h2 className="text-3xl font-black uppercase italic tracking-tighter">Technical Asset Viewer</h2>
-                <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">Registry: {currentLesson.lesson_title} Attachment</p>
+                <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">Registry: {attachmentToDisplay?.label} for {currentLesson.lesson_title}</p>
               </div>
               <button
                 onClick={() => setShowAttachment(false)}
@@ -357,15 +366,15 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
             </header>
 
             <div className="flex-1 overflow-hidden bg-slate-100 p-4">
-              {currentLesson.attachment_type === 'pdf' ? (
-                <iframe src={currentLesson.attachment_url} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
-              ) : currentLesson.attachment_type === 'video' ? (
+              {attachmentToDisplay?.type === 'pdf' ? (
+                <iframe src={attachmentToDisplay.url} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
+              ) : attachmentToDisplay?.type === 'video' ? (
                 <div className="w-full h-full flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
-                  <video controls src={currentLesson.attachment_url} className="max-w-full max-h-full" />
+                  <video controls src={attachmentToDisplay.url} className="max-w-full max-h-full" />
                 </div>
               ) : (
                 <div className="w-full h-full p-8 overflow-auto flex items-center justify-center bg-white rounded-2xl shadow-inner">
-                  <img src={currentLesson.attachment_url} alt="Technical Schematic" className="max-w-full max-h-full rounded shadow-xl object-contain" />
+                  <img src={attachmentToDisplay?.url} alt="Technical Schematic" className="max-w-full max-h-full rounded shadow-xl object-contain" />
                 </div>
               )}
             </div>

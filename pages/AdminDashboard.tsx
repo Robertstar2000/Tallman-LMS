@@ -15,6 +15,7 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
   const [isSyncingThumbnail, setIsSyncingThumbnail] = useState<Record<string, boolean>>({});
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, course: Course | null }>({ isOpen: false, course: null });
   const [editModal, setEditModal] = useState<{ isOpen: boolean, course: Course | null }>({ isOpen: false, course: null });
+  const [attachmentModal, setAttachmentModal] = useState<{ isOpen: boolean, course: Course | null }>({ isOpen: false, course: null });
   const [isSaving, setIsSaving] = useState(false);
 
   const refreshData = async () => {
@@ -527,6 +528,15 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
 
                         <button
                           disabled={isRegenerating || isSyncing}
+                          onClick={() => setAttachmentModal({ isOpen: true, course })}
+                          className={`px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 ${course.attachment_url ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500 hover:bg-indigo-600 hover:text-white'}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                          {course.attachment_url ? 'Attachment Active' : 'Add Attachment'}
+                        </button>
+
+                        <button
+                          disabled={isRegenerating || isSyncing}
                           onClick={() => navigate(`/admin/edit/${course.course_id}`)}
                           className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95 disabled:opacity-30 flex items-center gap-2"
                         >
@@ -622,6 +632,84 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
                   Confirm & Reset All Learners
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* COURSE ATTACHMENT MODAL */}
+      {attachmentModal.isOpen && attachmentModal.course && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3.5rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden animate-in zoom-in-95 duration-500">
+            <header className="bg-slate-900 p-10 text-white">
+              <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none">Industrial Asset Nexus</h2>
+              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-2 underline decoration-indigo-400/30">Course-Wide Technical Attachment Protocol</p>
+            </header>
+
+            <div className="p-12 space-y-8">
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-8 rounded-r-3xl">
+                <p className="text-amber-800 font-bold text-sm leading-relaxed">
+                  <span className="block font-black uppercase mb-2 text-xs tracking-wider">Architecture Guidance:</span>
+                  Industrial best practice suggests editing **Test Questions** within the course modules to explicitly reference the technical data in this attachment.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Accepted Formats</label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {['pdf', 'image', 'video'].map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setAttachmentModal({ ...attachmentModal, course: { ...attachmentModal.course!, attachment_type: type as any } })}
+                        className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all font-black uppercase text-xs tracking-tight ${attachmentModal.course!.attachment_type === type ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400 hover:border-slate-300'}`}
+                      >
+                        {type}
+                        {attachmentModal.course!.attachment_type === type && <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 01-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-2 px-2">Max Registry Volume: 100MB</p>
+                </div>
+
+                <div className="space-y-6">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Resource Locator (URL)</label>
+                  <textarea
+                    className="w-full h-40 p-6 rounded-3xl border bg-slate-50 font-medium text-slate-700 outline-none focus:ring-4 focus:ring-indigo-100 placeholder:text-slate-300 text-sm leading-relaxed"
+                    placeholder="Enter https:// secure technical link..."
+                    value={attachmentModal.course.attachment_url || ''}
+                    onChange={(e) => setAttachmentModal({ ...attachmentModal, course: { ...attachmentModal.course!, attachment_url: e.target.value } })}
+                  />
+                  <p className="text-[10px] text-slate-400 font-bold leading-tight px-2">Note: Tallman CDN synchronizes .pdf, .jpg, and .mp4 orchestration.</p>
+                </div>
+              </div>
+
+              <footer className="flex gap-4 pt-4">
+                <button
+                  onClick={() => setAttachmentModal({ isOpen: false, course: null })}
+                  className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!attachmentModal.course) return;
+                    setIsSaving(true);
+                    try {
+                      await TallmanAPI.updateCourse(attachmentModal.course);
+                      await refreshData();
+                      setAttachmentModal({ isOpen: false, course: null });
+                      alert("Technical Asset Synced: Registry Updated.");
+                    } catch (err) {
+                      alert("Sync Failure: Registry write error.");
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  className="flex-2 py-6 bg-indigo-600 text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl hover:bg-slate-900 transition-all"
+                >
+                  {isSaving ? 'Syncing...' : 'Confirm Attachment'}
+                </button>
+              </footer>
             </div>
           </div>
         </div>

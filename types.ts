@@ -89,6 +89,8 @@ export interface Course {
   status: CourseStatus;
   enrolled_count: number;
   rating: number;
+  attachment_url?: string;
+  attachment_type?: 'pdf' | 'image' | 'video';
   modules?: Module[];
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
 }

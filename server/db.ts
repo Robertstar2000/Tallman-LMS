@@ -126,7 +126,9 @@ export async function initDb() {
       status TEXT,
       enrolled_count INTEGER DEFAULT 0,
       rating REAL DEFAULT 0,
-      difficulty TEXT
+      difficulty TEXT,
+      attachment_url TEXT,
+      attachment_type TEXT
     );
 
     CREATE TABLE IF NOT EXISTS modules (

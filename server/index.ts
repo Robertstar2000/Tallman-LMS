@@ -337,11 +337,9 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
         await db.transaction(async () => {
             // 1. Upsert Course using ON CONFLICT for persistence safety
             await db.run(`
-                INSERT INTO courses (
-                    course_id, course_name, short_description, thumbnail_url, 
-                    category_id, instructor_id, status, enrolled_count, rating, difficulty
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO courses (course_id, course_name, short_description, thumbnail_url,
+                    category_id, instructor_id, status, enrolled_count, rating, difficulty, attachment_url, attachment_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(course_id) DO UPDATE SET
                     course_name = COALESCE(excluded.course_name, courses.course_name),
                     short_description = COALESCE(excluded.short_description, courses.short_description),
@@ -351,7 +349,9 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
                     status = COALESCE(excluded.status, courses.status),
                     enrolled_count = COALESCE(excluded.enrolled_count, courses.enrolled_count),
                     rating = COALESCE(excluded.rating, courses.rating),
-                    difficulty = COALESCE(excluded.difficulty, courses.difficulty)
+                    difficulty = COALESCE(excluded.difficulty, courses.difficulty),
+                    attachment_url = COALESCE(excluded.attachment_url, courses.attachment_url),
+                    attachment_type = COALESCE(excluded.attachment_type, courses.attachment_type)
             `, [
                 course.course_id,
                 course.course_name || null,
@@ -362,7 +362,9 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
                 course.status || null,
                 course.enrolled_count ?? null,
                 course.rating ?? null,
-                course.difficulty || null
+                course.difficulty || null,
+                course.attachment_url || null,
+                course.attachment_type || null
             ]);
 
             if (course.modules) {
