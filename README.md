@@ -3,6 +3,10 @@
 
 Welcome to the **Tallman Learning Management System (LMS)**. This is a high-fidelity, dual-stack industrial training platform designed for precision workforce development.
 
+- **Local Developer Mode**: `docker-compose up --build` remains fully functional for your current workflow.
+- **Industrial Swarm Mode**: `docker stack deploy -c docker-compose.swarm.yml tallman` is now the verified path for production migration.
+- **Persistence Compliance**: Database and technical manual storage now follow the NFS shared storage protocol.
+
 ## 📋 Architecture Overview
 
 The platform is architected as a decoupled system for maximum operational reliability:

@@ -14,5 +14,9 @@ COPY . .
 # Expose the Vite port
 EXPOSE 3180
 
-# Development command for the frontend
-CMD ["npm", "run", "dev:frontend"]
+# Production command for the frontend
+CMD if [ "$NODE_ENV" = "production" ]; then \
+    npm run build && npm run preview -- --host 0.0.0.0 --port 3180; \
+    else \
+    npm run dev:frontend -- --host 0.0.0.0 --port 3180; \
+    fi

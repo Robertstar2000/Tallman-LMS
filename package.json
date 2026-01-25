@@ -7,7 +7,9 @@
     "dev:frontend": "vite",
     "dev:backend": "npx tsx watch server/index.ts",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "build": "vite build",
+    "build:server": "tsc server/index.ts --outDir dist/server --esModuleInterop --module esnext --moduleResolution node",
+    "build": "vite build && npm run build:server",
+    "start": "node dist/server/server/index.js",
     "preview": "vite preview",
     "seed": "npx tsx server/seed.ts"
   },
