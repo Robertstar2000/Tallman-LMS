@@ -118,4 +118,4 @@ For security compliance, every stack must implement a dual-network architecture:
 4. **Orchestration**: Define the `docker-compose.yml` (without version tag) using `bullseye-slim`.
 5. **Entrypoint**: Create and `chmod +x` a `docker-entrypoint.sh` for runtime bootstrapping.
 6. **Production Sync**: Move deployment manifests to `/var/data/config/` on the Swarm Master and execute `make deploy`.
-7. **Documentation Protocol**: Update `README.md` to explicitly state the **Verified Deployment Paths** (Local Developer vs. Industrial Swarm) and **Persistence Compliance** standards immediately following the platform introduction.
+7. **Documentation Protocol**: Update `README.md` to explicitly state the **Verified Deployment Paths** (Local Developer vs. Industrial Swarm), **Persistence Compliance** standards, and the **Master Registry** (the application's specific repository URL) immediately following the platform introduction.

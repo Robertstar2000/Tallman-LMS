@@ -6,6 +6,7 @@ Welcome to the **Tallman Learning Management System (LMS)**. This is a high-fide
 - **Local Developer Mode**: `docker-compose up --build` remains fully functional for your current workflow.
 - **Industrial Swarm Mode**: `docker stack deploy -c docker-compose.swarm.yml tallman` is now the verified path for production migration.
 - **Persistence Compliance**: Database and technical manual storage now follow the NFS shared storage protocol.
+- **Master Registry**: `https://github.com/Robertstar2000/Tallman-LMS.git`
 
 ## 📋 Architecture Overview
 
