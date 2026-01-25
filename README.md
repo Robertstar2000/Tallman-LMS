@@ -7,6 +7,11 @@ Welcome to the **Tallman Learning Management System (LMS)**. This is a high-fide
 - **Industrial Swarm Mode**: `docker stack deploy -c docker-compose.swarm.yml tallman` is now the verified path for production migration.
 - **Persistence Compliance**: Database and technical manual storage now follow the NFS shared storage protocol.
 - **Master Registry**: `https://github.com/Robertstar2000/Tallman-LMS.git`
+- **Network Access Points**:
+  - **Frontend Console (Technician Interface)**: `http://localhost:3180`
+  - **API Nexus (Administrative Backend)**: `http://localhost:3185`
+  - **Database Persistence**: `localhost:5432` (Industrial Mode) / `Local SQLite` (Dev Mode)
+
 
 ## 📋 Architecture Overview
 
