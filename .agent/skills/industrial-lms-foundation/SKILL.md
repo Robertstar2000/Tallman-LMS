@@ -86,9 +86,35 @@ Implement a global wrapper for AI SDKs (Google Generative AI, OpenAI, etc.).
 
 ---
 
+---
+---
+
+## 🌐 6. Docker Swarm: Industrial Orchestration Platform
+
+This governs the production-grade deployment across the Tallman multi-node cluster.
+
+### Cluster Infrastructure
+- **High Availability Nexus**: 3 Manager Nodes (10.10.20.36, .61, .63) orchestrated by **Keepalived** for a Virtual IP (10.10.20.65) failover.
+- **Shared Persistence**: Centralized NFS storage server (10.10.20.64) mounted at `/var/data` on all nodes. All application volumes must reside here for cross-node portability.
+- **Automated Ingress**: **Traefik** handles routing and SSL (Let's Encrypt) via AWS Route 53 DNS validation.
+
+### Stack Deployment Protocol
+Always use the standardized **Makefile** at `/var/data/config/` for registry operations.
+- `make deploy STACK=<name>`: Initialize/Update stack.
+- `make update STACK=<name>`: Force redeploy with latest images.
+- `make list`: Audit all active industrial stacks.
+
+### Network Isolation Protocol
+For security compliance, every stack must implement a dual-network architecture:
+1. **`<stackname>_traefik`**: An overlay network for external Traefik routing.
+2. **`<stackname>_internal`**: An overlay network for inter-container communication (e.g., App to DB), isolated from the ingress.
+
+---
+
 ## 🛠️ Re-Implementation Workflow
 1. **Bootstrap**: Initialize `package.json` with `express`, `pg`, `better-sqlite3`, `jsonwebtoken`, `bcryptjs`.
 2. **Persistence**: Build `db.ts` with sequential schema execution and CASCADE support.
 3. **Identity**: Create authentication routes with Governance Overrides and Email-First sync logic.
 4. **Orchestration**: Define the `docker-compose.yml` (without version tag) using `bullseye-slim`.
 5. **Entrypoint**: Create and `chmod +x` a `docker-entrypoint.sh` for runtime bootstrapping.
+6. **Production Sync**: Move deployment manifests to `/var/data/config/` on the Swarm Master and execute `make deploy`.
