@@ -3,6 +3,8 @@ server/db.sqlite
 server/db.sqlite-journal
 *.sqlite
 *.sqlite-journal
+tallman.db
+*.db
 
 # Environment & Credentials
 .env

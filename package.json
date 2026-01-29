@@ -11,12 +11,14 @@
     "build": "vite build && npm run build:server",
     "start": "node dist/server/server/index.js",
     "preview": "vite preview",
-    "seed": "npx tsx server/seed.ts"
+    "seed": "npx tsx server/seed.ts",
+    "reset-admin": "npx tsx reset-admin.ts"
   },
   "dependencies": {
     "@google/genai": "1.3.0",
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/pg": "^8.16.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.0",
@@ -28,8 +30,9 @@
     "pg": "^8.17.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "6.22.3",
-    "recharts": "2.12.7",
+    "recharts": "^3.7.0",
     "zod": "^4.3.5"
   },
   "devDependencies": {

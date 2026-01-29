@@ -1,30 +1,6 @@
 services:
-  # INDUSTRIAL CLUSTER: PostgreSQL Persistence Nexus
-  # Standardized for multi-node Docker Swarm deployment
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: tallman_admin
-      POSTGRES_PASSWORD: industrial_secure_2026
-      POSTGRES_DB: tallman_lms
-    volumes:
-      # Mapped to the Industrial NFS mount for cross-node persistence
-      - /var/data/tallman-lms/db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U tallman_admin -d tallman_lms" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - tallman-internal
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
+  # INDUSTRIAL CLUSTER: Persistent SQLite Storage Volume
+  # Note: Removed Postgres service in favor of embedded SQLite architecture
 
   # TALLMAN API NEXUS: Automated Intelligence & Registry
   # Orchestrated with Traefik ingress and network isolation
@@ -33,31 +9,32 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    depends_on:
-      db:
-        condition: service_healthy
     env_file:
       - .env
     environment:
       - NODE_ENV=production
       - PORT=3185
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=tallman_admin
-      - POSTGRES_PASSWORD=industrial_secure_2026
-      - POSTGRES_DB=tallman_lms
-      - POSTGRES_PORT=5432
+      # SQLite Persistence Configuration
+      - DB_PATH=/app/data/tallman.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      # Map the NFS persistent volume to the container's data directory
+      # This ensures tallman.db persists across container restarts
+      - /var/data/tallman-lms/data:/app/data
     networks:
       - tallman-internal
       - traefik_public
     deploy:
-      replicas: 2
+      # CRITICAL: SQLite requires single-writer access.
+      # Do not scale backend beyond 1 replica without migrating to Postgres.
+      replicas: 1
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.tallman-backend.rule=Host(`api-lms.swarm.tallmanequipment.com`)"
         - "traefik.http.routers.tallman-backend.entrypoints=https"
         - "traefik.http.routers.tallman-backend.tls.certresolver=letsencrypt"
         - "traefik.http.services.tallman-backend.loadbalancer.server.port=3185"
-        - "traefik.swarm.network=traefik_public"
+        - "traefik.swarm.network=infra_traefik"
       restart_policy:
         condition: on-failure
 
@@ -84,7 +61,7 @@ services:
         - "traefik.http.routers.tallman-frontend.entrypoints=https"
         - "traefik.http.routers.tallman-frontend.tls.certresolver=letsencrypt"
         - "traefik.http.services.tallman-frontend.loadbalancer.server.port=3180"
-        - "traefik.swarm.network=traefik_public"
+        - "traefik.swarm.network=infra_traefik"
       restart_policy:
         condition: on-failure
 

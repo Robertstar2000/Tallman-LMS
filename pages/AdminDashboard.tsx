@@ -41,7 +41,9 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
       setEnrollments(e || []);
       setUsers(u || []);
     } catch (err: any) {
-      console.error("Dashboard Refresh Failure:", err);
+      const errorMsg = err.message || 'Unknown Error';
+      const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
+      console.error("Dashboard Refresh Failure:", sanitizedError);
       // Force logout if token is invalid or expired (401/403)
       if (err.message?.includes('403') || err.message?.includes('401') || err.message?.includes('token')) {
         TallmanAPI.logout();
@@ -72,7 +74,7 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
       await TallmanAPI.updateCourse({ ...course, thumbnail_url: newUrl });
       await refreshData();
     } catch (err) {
-      console.error(err);
+      console.error("Thumbnail Sync Failed:", err.message);
       alert("Visual Sync failed. Check network integrity.");
     } finally {
       setIsSyncingThumbnail(prev => ({ ...prev, [course.course_id]: false }));
@@ -427,13 +429,13 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {courses.map((course) => {
+              {courses.map((course, index) => {
                 const isRegenerating = !!regenProgress[course.course_id];
                 const isSyncing = isSyncingThumbnail[course.course_id];
                 const progress = regenProgress[course.course_id];
 
                 return (
-                  <tr key={course.course_id} className="hover:bg-slate-50 transition-colors group">
+                  <tr key={`${course.course_id}-admin-${index}`} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-10 py-8">
                       <div className="flex items-center gap-5">
                         <div className="relative">

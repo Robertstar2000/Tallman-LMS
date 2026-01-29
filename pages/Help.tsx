@@ -1,47 +1,36 @@
+import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
-import React, { useState, useEffect } from 'react';
-
-const HelpPage: React.FC = () => {
+const Help: React.FC = () => {
     const [content, setContent] = useState<string>('');
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch('/help.md')
             .then(res => res.text())
-            .then(text => {
-                setContent(text);
-                setLoading(false);
-            })
-            .catch(() => {
-                setContent('Archive retrieval failure. Manual inaccessible.');
-                setLoading(false);
-            });
+            .then(text => setContent(text))
+            .catch(err => console.error("Failed to load help manual:", err));
     }, []);
 
     return (
-        <div className="max-w-4xl mx-auto py-20 px-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header className="mb-16 border-b-8 border-slate-900 pb-10">
-                <h1 className="text-7xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Industrial Manual</h1>
-                <p className="text-slate-500 text-lg mt-4 font-black uppercase tracking-[0.3em] text-xs">Standard Operating Procedures & Platform Governance</p>
-            </header>
+        <div className="max-w-4xl mx-auto py-12 px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-[3rem] shadow-xl border border-slate-100 p-12 md:p-20 relative overflow-hidden">
 
-            {loading ? (
-                <div className="p-20 text-center font-black uppercase tracking-widest text-slate-400 animate-pulse">
-                    Accessing Encrypted Metadata...
-                </div>
-            ) : (
-                <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:italic prose-headings:tracking-tighter prose-p:font-medium prose-p:text-slate-600 prose-li:text-slate-600 prose-strong:text-slate-900 prose-code:text-indigo-600">
-                    <div className="whitespace-pre-wrap font-medium text-lg leading-relaxed text-slate-700 bg-white p-12 rounded-[3rem] border shadow-sm">
-                        {content}
-                    </div>
-                </div>
-            )}
+                {/* Header Decoration */}
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div className="absolute top-10 right-10 opacity-5 text-9xl">📖</div>
 
-            <footer className="mt-20 pt-10 border-t border-slate-200 text-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Property of Tallman Equipment Co. | Security Level: Internal</p>
-            </footer>
+                <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-h1:text-5xl prose-h1:italic prose-a:text-indigo-600 hover:prose-a:text-indigo-500 prose-img:rounded-3xl prose-img:shadow-lg">
+                    <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-16 pt-8 border-t border-slate-100 flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-widest">
+                    <span>Tallman Industrial LMS</span>
+                    <span>Internal Use Only</span>
+                </div>
+            </div>
         </div>
     );
 };
 
-export default HelpPage;
+export default Help;

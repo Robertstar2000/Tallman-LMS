@@ -35,7 +35,7 @@ const WorkforceRegistry: React.FC = () => {
         }
     };
 
-    const handleUpdateUser = async (userId: string, updates: { roles?: UserRole[], status?: string }) => {
+    const handleUpdateUser = async (userId: string, updates: { roles?: UserRole[], status?: string, branch_id?: string }) => {
         try {
             await TallmanAPI.adminUpdateUser(userId, updates);
             loadData(); // Refresh
@@ -102,8 +102,17 @@ const WorkforceRegistry: React.FC = () => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-10 py-8 font-bold text-slate-600 text-sm">
-                                        {user.branch_id || 'Global'}
+                                    <td className="px-10 py-8">
+                                        <select
+                                            className="px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-600 text-sm outline-none hover:border-indigo-300 focus:border-indigo-500 transition-all cursor-pointer"
+                                            value={user.branch_id || 'Other'}
+                                            onChange={(e) => handleUpdateUser(user.user_id, { branch_id: e.target.value })}
+                                        >
+                                            <option value="Columbus">Columbus</option>
+                                            <option value="Addison">Addison</option>
+                                            <option value="Lake City">Lake City</option>
+                                            <option value="Other">Other</option>
+                                        </select>
                                     </td>
                                     <td className="px-10 py-8">
                                         <div className="flex flex-wrap gap-2">
@@ -141,10 +150,38 @@ const WorkforceRegistry: React.FC = () => {
                                             onChange={(e) => {
                                                 const newRole = e.target.value as UserRole;
                                                 const currentRoles = user.roles;
-                                                if (!currentRoles.includes(newRole)) {
-                                                    handleUpdateUser(user.user_id, { roles: [...currentRoles, newRole] });
-                                                } else if (currentRoles.length > 1) {
-                                                    handleUpdateUser(user.user_id, { roles: currentRoles.filter(r => r !== newRole) });
+
+                                                // If granting "Hold", just update roles and set status to hold
+                                                if (newRole === 'Hold') {
+                                                    handleUpdateUser(user.user_id, {
+                                                        roles: ['Hold'],
+                                                        status: 'hold'
+                                                    });
+                                                }
+                                                // If granting a real role (not Hold)
+                                                else if (!currentRoles.includes(newRole)) {
+                                                    // Remove 'Hold' if present and add the new role
+                                                    const updatedRoles = currentRoles.filter(r => r !== 'Hold');
+                                                    updatedRoles.push(newRole);
+
+                                                    // Automatically activate the user when granting a real role
+                                                    handleUpdateUser(user.user_id, {
+                                                        roles: updatedRoles,
+                                                        status: 'active'
+                                                    });
+                                                }
+                                                // If removing a role
+                                                else if (currentRoles.length > 1) {
+                                                    const updatedRoles = currentRoles.filter(r => r !== newRole);
+                                                    // If no roles left, set to Hold
+                                                    if (updatedRoles.length === 0) {
+                                                        handleUpdateUser(user.user_id, {
+                                                            roles: ['Hold'],
+                                                            status: 'hold'
+                                                        });
+                                                    } else {
+                                                        handleUpdateUser(user.user_id, { roles: updatedRoles });
+                                                    }
                                                 }
                                             }}
                                             value=""

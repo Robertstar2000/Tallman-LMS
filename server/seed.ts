@@ -76,6 +76,17 @@ async function seed() {
     const mentorshipLogs = JSON.parse(fs.readFileSync(path.join(__dirname, 'mentorship-seed.json'), 'utf8'));
     const userBadges = JSON.parse(fs.readFileSync(path.join(__dirname, 'user-badges-seed.json'), 'utf8'));
 
+    // Check if registry is already populated
+    try {
+        const existingUsers = await db.get('SELECT COUNT(*) as count FROM users');
+        if (existingUsers && (existingUsers as any).count > 0) {
+            console.log("🌱 REGISTRY DETECTED: Skipping seed operations to preserve industrial data integrity.");
+            process.exit(0);
+        }
+    } catch (e) {
+        // Table likely doesn't exist, proceed with seed
+    }
+
     console.log("🌱 STARTING SEED: Synchronizing Industrial Records...");
 
     // Seed Branches

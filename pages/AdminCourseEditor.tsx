@@ -187,30 +187,37 @@ const AdminCourseEditor: React.FC = () => {
                     <div className="space-y-4">
                       {lesson.quiz_questions?.map((q, qIdx) => (
                         <div key={qIdx} className="bg-slate-900 p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
-                          <input
-                            className="w-full font-black text-xl text-white mb-4 outline-none bg-transparent border-b-2 border-white/10 focus:border-indigo-500 pb-2"
+                          <textarea
+                            className="w-full font-black text-xl text-white mb-4 outline-none bg-transparent border-b-2 border-white/10 focus:border-indigo-500 pb-2 h-auto min-h-[4rem] resize-none"
+                            rows={2}
                             value={q.question}
                             onChange={(e) => {
                               const qs = [...(lesson.quiz_questions || [])];
                               qs[qIdx].question = e.target.value;
                               updateLessonField(mIdx, lIdx, 'quiz_questions', qs);
                             }}
+                            placeholder="Enter technical audit inquiry..."
                           />
                           <div className="grid grid-cols-2 gap-4">
                             {q.options.map((opt, oIdx) => (
-                              <div key={oIdx} className="flex gap-3 items-center">
+                              <div key={oIdx} className="flex gap-3 items-center group/option">
                                 <button
                                   onClick={() => {
                                     const qs = [...(lesson.quiz_questions || [])];
                                     qs[qIdx].correctIndex = oIdx;
                                     updateLessonField(mIdx, lIdx, 'quiz_questions', qs);
                                   }}
-                                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${q.correctIndex === oIdx ? 'bg-emerald-500 text-white shadow-lg' : 'bg-white/5 border border-white/10 text-white/40'}`}
+                                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all border ${q.correctIndex === oIdx ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg scale-110' : 'bg-white/5 border-white/10 text-white/20 hover:bg-white/10'}`}
                                 >
-                                  {oIdx + 1}
+                                  {q.correctIndex === oIdx ? (
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>
+                                  ) : (
+                                    <span className="font-black text-sm">{oIdx + 1}</span>
+                                  )}
                                 </button>
-                                <input
-                                  className="flex-1 text-xs font-bold bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
+                                <textarea
+                                  rows={2}
+                                  className="flex-1 text-xs font-bold bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-indigo-500 resize-none h-16 leading-tight"
                                   value={opt}
                                   onChange={(e) => {
                                     const qs = [...(lesson.quiz_questions || [])];

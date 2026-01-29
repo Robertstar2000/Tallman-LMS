@@ -29,28 +29,46 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
   }, [initialUser.user_id]);
 
   const activeCourses = useMemo(() => {
+    const seen = new Set<string>();
     return enrollments
       .filter(e => e.status !== 'completed' && e.progress_percent < 100)
       .map(e => {
+        if (seen.has(e.course_id)) return null;
         const course = courses.find(c => c.course_id === e.course_id);
-        return course ? { ...course, progress: e.progress_percent } : null;
+        if (course) {
+          seen.add(e.course_id);
+          return { ...course, progress: e.progress_percent };
+        }
+        return null;
       })
       .filter(Boolean) as (Course & { progress: number })[];
   }, [courses, enrollments]);
 
   const completedCourses = useMemo(() => {
+    const seen = new Set<string>();
     return enrollments
       .filter(e => e.status === 'completed' || e.progress_percent === 100)
       .map(e => {
+        if (seen.has(e.course_id)) return null;
         const course = courses.find(c => c.course_id === e.course_id);
-        return course ? { ...course, progress: 100 } : null;
+        if (course) {
+          seen.add(e.course_id);
+          return { ...course, progress: 100 };
+        }
+        return null;
       })
       .filter(Boolean) as (Course & { progress: number })[];
   }, [courses, enrollments]);
 
   const availableCatalog = useMemo(() => {
     const enrolledIds = new Set(enrollments.map(e => e.course_id));
-    return courses.filter(c => !enrolledIds.has(c.course_id));
+    const seen = new Set<string>();
+    return courses.filter(c => {
+      if (enrolledIds.has(c.course_id)) return false;
+      if (seen.has(c.course_id)) return false;
+      seen.add(c.course_id);
+      return true;
+    });
   }, [courses, enrollments]);
 
   const handleStartCourse = async (courseId: string) => {
@@ -77,7 +95,7 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
     <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
       <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none italic uppercase">Personnel Console</h1>
+          <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none italic uppercase">Personnel Console <span className="text-xs text-slate-300 not-italic tracking-normal">v1.2</span></h1>
           <p className="text-slate-500 mt-4 font-medium text-lg">&gt; Hello, <span className="text-indigo-600 font-black">{user.display_name}</span>. Resuming your professional mastering sequence.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -102,14 +120,18 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
         </div>
 
         <div className="flex gap-8 overflow-x-auto pb-12 pt-4 px-2 snap-x hide-scrollbar">
-          {activeCourses.map((course) => (
+          {activeCourses.map((course, index) => (
             <Link
-              key={course.course_id}
+              key={`${course.course_id}-active-${index}`}
               to={`/player/${course.course_id}`}
               className="group relative flex-none w-[380px] h-[600px] bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-[0_48px_80px_-20px_rgba(0,0,0,0.15)] hover:-translate-y-4 transition-all duration-700 snap-start"
             >
               <div className="absolute inset-0">
-                <img src={course.thumbnail_url} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[2s] ease-out" alt="" />
+                <img
+                  src={course.thumbnail_url}
+                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[2s] ease-out"
+                  alt=""
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
               </div>
 
@@ -158,8 +180,8 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
-          {availableCatalog.map(course => (
-            <div key={course.course_id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-[300px]">
+          {availableCatalog.map((course, index) => (
+            <div key={`${course.course_id}-catalog-${index}`} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-[300px]">
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
                   <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest">{course.difficulty}</span>
@@ -188,8 +210,8 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
-            {completedCourses.map(course => (
-              <div key={course.course_id} className="bg-slate-50 p-8 rounded-[3rem] border border-slate-200 flex items-center gap-6 opacity-60 hover:opacity-100 transition-opacity">
+            {completedCourses.map((course, index) => (
+              <div key={`${course.course_id}-completed-${index}`} className="bg-slate-50 p-8 rounded-[3rem] border border-slate-200 flex items-center gap-6 opacity-60 hover:opacity-100 transition-opacity">
                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🏆</div>
                 <div>
                   <h4 className="font-black text-slate-900 italic uppercase">{course.course_name}</h4>

@@ -26,10 +26,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setIsProcessing(true);
     try {
       const user = await TallmanAPI.login(email, password);
-      if (user) onLogin(user);
-      else setError('Invalid enterprise credentials.');
-    } catch (err) {
-      setError('Connection to Master Directory failed.');
+      if (user) {
+        onLogin(user);
+      } else {
+        setError('Invalid enterprise credentials.');
+      }
+    } catch (err: any) {
+      // Display the actual error message from the backend
+      const errorMessage = err.message || 'Connection to Master Directory failed.';
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }

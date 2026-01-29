@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, Navigate, useParams } from 'react-router-dom';
 import { UserRole, User } from './types';
 import { TallmanAPI } from './backend-server';
-import LearnerDashboard from './pages/LearnerDashboard';
+import LearnerDashboardV2 from './pages/LearnerDashboardV2';
 import AdminDashboard from './pages/AdminDashboard';
 import CourseCatalog from './pages/CourseCatalog';
 import CoursePlayer from './pages/CoursePlayer';
@@ -185,7 +185,7 @@ export default function App() {
     <HashRouter>
       <Layout user={user} onLogout={handleLogout} isLearnerMode={isLearnerMode} setIsLearnerMode={setIsLearnerMode}>
         <Routes>
-          <Route path="/" element={<LearnerDashboard user={user} refreshUser={refreshUser} />} />
+          <Route path="/" element={<LearnerDashboardV2 user={user} refreshUser={refreshUser} />} />
           <Route path="/catalog" element={<CourseCatalog />} />
           <Route path="/player/:courseId" element={<CoursePlayer refreshUser={refreshUser} />} />
           <Route path="/achievements" element={<Achievements />} />

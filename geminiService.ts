@@ -142,7 +142,7 @@ export const generateCourseOutline = async (topic: string) => {
     } catch (error: any) {
       const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
       if (!isRetryable) {
-        console.error("Gemini Outline Critical Error:", error);
+        console.error("Gemini Outline Critical Error:", error.message);
       }
       throw error;
     }
@@ -223,7 +223,7 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
     } catch (error: any) {
       const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
       if (!isRetryable) {
-        console.error("Gemini Content Critical Error:", error);
+        console.error("Gemini Content Critical Error:", error.message);
       }
       throw error;
     }
@@ -240,7 +240,7 @@ export const generateCourseThumbnail = async (topic: string) => {
       }, { timeout: 300000 });
 
       const prompt = `Professional cinematic industrial photography of ${topic}. 
-      High-tech technical equipment, 8k resolution, professional lighting, sharp metallic textures, depth of field. 
+      High-tech technical equipment, 720p resolution, professional lighting, sharp metallic textures, depth of field. 
       Unique technical perspective.`;
 
       const result = await model.generateContent(prompt);
@@ -255,9 +255,11 @@ export const generateCourseThumbnail = async (topic: string) => {
 
       throw new Error("Visual Synthesis Failure: No image data returned from registry.");
     } catch (error: any) {
-      console.error("Visual Sync Architecture Error:", error);
+      const errorMsg = error.message || 'Unknown Error';
+      const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
+      console.error("Visual Sync Architecture Error:", sanitizedError);
       // Fallback protocol: Attempt a secondary high-clearance image render
-      const fallbackPrompt = encodeURIComponent(`Professional industrial photography of ${topic}, 8k, cinematic`);
+      const fallbackPrompt = encodeURIComponent(`Professional industrial photography of ${topic}, 4k, cinematic`);
       const randomSeed = Math.floor(Math.random() * 100000);
       return `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1280&height=720&seed=${randomSeed}&nologo=true&model=flux`;
     }

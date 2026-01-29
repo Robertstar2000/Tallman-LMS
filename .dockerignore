@@ -8,4 +8,3 @@ tallman.db
 image_models.log
 methods.log
 gemini-result.txt
-package-lock.json

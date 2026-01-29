@@ -27,12 +27,18 @@ class TallmanAPIClient {
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
+      cache: 'no-store',
       headers
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'API Error' }));
-      throw new Error(error.message || 'API Error');
+      const rawMessage = error.message || 'API Error';
+      // Truncate message if it's too long (e.g. contains base64 dump)
+      const sanitizedMessage = rawMessage.length > 500
+        ? rawMessage.substring(0, 500) + '... (truncated)'
+        : rawMessage;
+      throw new Error(sanitizedMessage);
     }
 
     return response.json();
@@ -145,7 +151,7 @@ class TallmanAPIClient {
     return this.fetchAPI('/admin/users');
   }
 
-  async adminUpdateUser(userId: string, updates: { roles?: UserRole[], status?: string }): Promise<void> {
+  async adminUpdateUser(userId: string, updates: { roles?: UserRole[], status?: string, branch_id?: string }): Promise<void> {
     return this.fetchAPI(`/admin/users/${userId}`, {
       method: 'PATCH',
       body: JSON.stringify(updates)

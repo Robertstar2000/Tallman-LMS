@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import db, { initDb } from './db.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -23,8 +24,8 @@ async function startServer() {
 startServer();
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
 app.get('/', (req, res) => {
     res.send(`
@@ -192,7 +193,7 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
 
 app.patch('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
     const { id } = req.params;
-    const { roles, status } = req.body;
+    const { roles, status, branch_id } = req.body;
 
     try {
         if (roles) {
@@ -200,6 +201,9 @@ app.patch('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, r
         }
         if (status) {
             await db.run('UPDATE users SET status = ? WHERE user_id = ?', [status, id]);
+        }
+        if (branch_id !== undefined) {
+            await db.run('UPDATE users SET branch_id = ? WHERE user_id = ?', [branch_id, id]);
         }
         res.json({ message: 'User updated' });
     } catch (error) {
@@ -211,24 +215,60 @@ app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, 
     const { id } = req.params;
 
     try {
-        await db.transaction(async () => {
-            // 1. Delete progress and enrollments
-            await db.run('DELETE FROM lesson_completions WHERE user_id = ?', [id]);
-            await db.run('DELETE FROM enrollments WHERE user_id = ?', [id]);
+        // First, verify the user exists
+        const userToDelete: any = await db.get('SELECT user_id, display_name, email FROM users WHERE user_id = ?', [id]);
 
-            // 2. Delete achievements
-            await db.run('DELETE FROM user_badges WHERE user_id = ?', [id]);
+        if (!userToDelete) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-            // 3. Delete mentorship records where they were mentor OR mentee
-            await db.run('DELETE FROM mentorship_logs WHERE mentor_id = ? OR mentee_id = ?', [id, id]);
+        console.log(`[DELETE] Initiating deletion for user: ${userToDelete.display_name} (${userToDelete.email})`);
 
-            // 4. Finally, delete the user identity
-            await db.run('DELETE FROM users WHERE user_id = ?', [id]);
-        });
+        // Get count of users before deletion for verification
+        const beforeCount: any = await db.get('SELECT COUNT(*) as count FROM users');
+        console.log(`[DELETE] Total users before deletion: ${beforeCount.count}`);
 
-        res.json({ message: 'Personnel record permanently decommissioned.' });
+        // Delete the user - CASCADE constraints will handle related records automatically
+        // The schema has ON DELETE CASCADE for:
+        // - enrollments (user_id)
+        // - lesson_completions (user_id)
+        // - user_badges (user_id)
+        // - mentorship_logs (mentor_id) - but we need to handle this manually since it's not CASCADE
+
+        // First, handle mentorship_logs where user is mentor or mentee
+        await db.run('DELETE FROM mentorship_logs WHERE mentor_id = ? OR mentee_id = ?', [id, id]);
+        console.log(`[DELETE] Removed mentorship records for user ${id}`);
+
+        // Now delete the user - CASCADE will handle enrollments, lesson_completions, and user_badges
+        const result = await db.run('DELETE FROM users WHERE user_id = ?', [id]);
+
+        // Verify deletion
+        const afterCount: any = await db.get('SELECT COUNT(*) as count FROM users');
+        const deletedCount = beforeCount.count - afterCount.count;
+
+        console.log(`[DELETE] Total users after deletion: ${afterCount.count}`);
+        console.log(`[DELETE] Users deleted: ${deletedCount}`);
+
+        // Safety check: ensure only ONE user was deleted
+        if (deletedCount !== 1) {
+            console.error(`[DELETE] CRITICAL ERROR: Expected to delete 1 user, but ${deletedCount} were deleted!`);
+            return res.status(500).json({
+                message: `Deletion integrity error: ${deletedCount} users affected instead of 1. Operation may have failed.`
+            });
+        }
+
+        // Verify the specific user is gone
+        const verifyGone = await db.get('SELECT user_id FROM users WHERE user_id = ?', [id]);
+        if (verifyGone) {
+            console.error(`[DELETE] CRITICAL ERROR: User ${id} still exists after deletion!`);
+            return res.status(500).json({ message: 'Deletion failed: User still exists in database.' });
+        }
+
+        console.log(`[DELETE] Successfully deleted user ${userToDelete.display_name} (${userToDelete.email}). All other users unaffected.`);
+        res.json({ message: `Personnel record for ${userToDelete.display_name} permanently decommissioned.` });
+
     } catch (error) {
-        console.error(error);
+        console.error('[DELETE] Error during user deletion:', error);
         res.status(500).json({ message: 'Decommissioning failure: System integrity error.' });
     }
 });
@@ -405,9 +445,17 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
             }
         });
 
+        console.log(`[PERSISTENCE] Course '${course.course_name}' (ID: ${course.course_id}) synchronized.`);
         res.json({ message: 'Course registry synchronized successfully' });
-    } catch (error) {
-        console.error(error);
+    } catch (error: any) {
+        // Sanitize error logging to prevent base64 dumps
+        const errorMsg = error.message || 'Unknown Error';
+        try {
+            fs.appendFileSync('server-error.log', `[${new Date().toISOString()}] UPSERT ERROR: ${errorMsg}\nSTACK: ${error.stack}\n\n`);
+        } catch (e) { console.error("Could not write to error log"); }
+
+        const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
+        console.error("Course Upsert Failed:", sanitizedError);
         res.status(500).json({ message: 'Sync error during master architecture update' });
     }
 });
