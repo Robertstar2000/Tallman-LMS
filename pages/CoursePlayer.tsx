@@ -132,7 +132,9 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
     // Stop rendering if we hit a manually added 'Quiz' or 'Audit' header in the content
     for (const line of lines) {
       if (line.match(/^#+ (Quiz|Audit|Assessment)/i)) break;
-      filteredLines.push(line);
+      // Strip HTML artifacts like <a name="..."></a> or <span></span>
+      const cleanLine = line.replace(/<[^>]*>/g, '').trim();
+      filteredLines.push(cleanLine);
     }
 
     return (
@@ -171,19 +173,18 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
     return Math.round((passedOnFirstTry / quizLessons.length) * 100);
   }, [enrollment, flatLessons]);
 
-  const [poppedUpLessons, setPoppedUpLessons] = useState<string[]>(() => {
-    const saved = sessionStorage.getItem('tallman_popped_lessons');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   useEffect(() => {
-    if (currentLesson?.attachment_url && !poppedUpLessons.includes(currentLesson.lesson_id)) {
-      setShowAttachment(true);
-      const newPopped = [...poppedUpLessons, currentLesson.lesson_id];
-      setPoppedUpLessons(newPopped);
-      sessionStorage.setItem('tallman_popped_lessons', JSON.stringify(newPopped));
+    if (currentLesson?.attachment_url) {
+      const saved = sessionStorage.getItem('tallman_popped_lessons');
+      const popped: string[] = saved ? JSON.parse(saved) : [];
+      
+      if (!popped.includes(currentLesson.lesson_id)) {
+        setShowAttachment(true);
+        const newPopped = [...popped, currentLesson.lesson_id];
+        sessionStorage.setItem('tallman_popped_lessons', JSON.stringify(newPopped));
+      }
     }
-  }, [currentLesson, poppedUpLessons]);
+  }, [currentLesson]);
 
   if (loading) return (
     <div className="h-full flex flex-col items-center justify-center p-20 text-center">
