@@ -106,6 +106,8 @@ class TallmanAPIClient {
   }
 
   async updateCourse(course: Course): Promise<void> {
+    console.log(`[API] Synchronizing Curriculum: ${course.course_name} (${course.course_id})`);
+    console.log(`[API] Payload Size: ${JSON.stringify(course).length} bytes`);
     return this.fetchAPI('/courses/upsert', {
       method: 'POST',
       body: JSON.stringify(course)

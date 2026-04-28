@@ -14,6 +14,22 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Redirect logs to file for remote terminal access
+const logFile = fs.createWriteStream(path.join(__dirname, '../server-debug.log'), { flags: 'a' });
+const logStdout = process.stdout;
+
+console.log = (...args) => {
+    const msg = `[${new Date().toISOString()}] LOG: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}\n`;
+    logFile.write(msg);
+    logStdout.write(msg);
+};
+
+console.error = (...args) => {
+    const msg = `[${new Date().toISOString()}] ERROR: ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}\n`;
+    logFile.write(msg);
+    logStdout.write(msg);
+};
+
 const app = express();
 const PORT = 3185;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
