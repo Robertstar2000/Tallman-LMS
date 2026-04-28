@@ -57,6 +57,17 @@ const WorkforceRegistry: React.FC = () => {
         }
     };
 
+    const handleDeleteUser = async (user: User) => {
+        if (window.confirm(`CRITICAL ACTION: Are you sure you want to permanently decommission the personnel record for ${user.display_name}? This will remove all progress and history.`)) {
+            try {
+                await TallmanAPI.adminDeleteUser(user.user_id);
+                loadData();
+            } catch (err: any) {
+                alert(err.message || 'Deletion failed');
+            }
+        }
+    };
+
     const getEnrollmentStatus = (e: Enrollment) => {
         if (e.status === 'dropped') return 'retry';
         if (e.progress_percent >= 100 || e.status === 'completed') return 'completed';
@@ -145,12 +156,24 @@ const WorkforceRegistry: React.FC = () => {
                                             <option value={UserRole.TEACHER}>Teacher</option>
                                         </select>
                                         
-                                        <button
-                                            onClick={() => setSelectedUserId(user.user_id)}
-                                            className="px-4 py-1.5 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 mt-2 block ml-auto"
-                                        >
-                                            Assign Course
-                                        </button>
+                                        <div className="flex flex-col gap-2 mt-2">
+                                            <button
+                                                onClick={() => setSelectedUserId(user.user_id)}
+                                                className="px-4 py-1.5 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 block ml-auto w-full"
+                                            >
+                                                Assign Course
+                                            </button>
+                                            
+                                            {/* Do not allow deleting the master admin account from here */}
+                                            {user.email !== 'robertstar@aol.com' && (
+                                                <button
+                                                    onClick={() => handleDeleteUser(user)}
+                                                    className="px-4 py-1.5 bg-red-50 text-red-600 rounded font-medium hover:bg-red-100 block ml-auto w-full text-sm transition-colors"
+                                                >
+                                                    Delete Employee
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             );
