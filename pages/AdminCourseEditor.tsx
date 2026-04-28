@@ -324,7 +324,7 @@ const AdminCourseEditor: React.FC = () => {
                           disabled={uploading}
                           className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-all disabled:opacity-50"
                         >
-                          {uploading ? "Synchronizing..." : "Select Technical Asset"}
+                          {uploading ? "Synchronizing..." : "Click here to upload image or video files"}
                         </button>
                         <input
                           type="file"
