@@ -258,8 +258,16 @@ const AdminCourseEditor: React.FC = () => {
       </div>
 
       {attachmentModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-sm"
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <div 
+            className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden"
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          >
             <header className="bg-slate-900 p-8 text-white">
               <h2 className="text-2xl font-black uppercase italic tracking-tighter">Attach files and video to course units</h2>
               <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">These will be seen by the student when they take the course</p>
