@@ -605,6 +605,12 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
     }
 });
 
+app.post('/api/log-error', (req, res) => {
+    const { message, stack, url } = req.body;
+    console.error(`[FRONTEND ERROR] ${message}\nURL: ${url}\nSTACK: ${stack}`);
+    res.json({ status: 'logged' });
+});
+
 // --- Enrollment Routes ---
 
 const hydrateEnrollment = async (enrollment: any) => {

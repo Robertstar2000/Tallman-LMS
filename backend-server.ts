@@ -245,6 +245,31 @@ class TallmanAPIClient {
   async getUserBadges(userId: string): Promise<(Badge & { earned_at: string })[]> {
     return this.fetchAPI(`/users/${userId}/badges`);
   }
+  async logError(error: any) {
+    try {
+      await fetch(`${API_BASE}/log-error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: error.message || String(error),
+          stack: error.stack,
+          url: window.location.href
+        })
+      });
+    } catch (e) {
+      // Ignore if logging itself fails
+    }
+  }
 }
 
 export const TallmanAPI = new TallmanAPIClient();
+
+// Capture global errors
+if (typeof window !== 'undefined') {
+  window.onerror = (message, source, lineno, colno, error) => {
+    TallmanAPI.logError(error || { message, source, lineno, colno });
+  };
+  window.onunhandledrejection = (event) => {
+    TallmanAPI.logError(event.reason);
+  };
+}
