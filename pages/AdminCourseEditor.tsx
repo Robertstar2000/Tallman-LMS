@@ -13,6 +13,7 @@ const AdminCourseEditor: React.FC = () => {
   const [attachmentModal, setAttachmentModal] = useState<{ mIdx: number, lIdx: number } | null>(null);
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [attachmentType, setAttachmentType] = useState<'pdf' | 'image' | 'video'>('pdf');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -295,18 +296,22 @@ const AdminCourseEditor: React.FC = () => {
                         <svg className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
-                        <p className="mb-2 text-sm text-slate-500 font-bold">{attachmentUrl ? `Attached: ${attachmentUrl.split('/').pop()}` : "Drop technical asset here"}</p>
+                        <p className="mb-2 text-sm text-slate-500 font-bold">
+                          {uploading ? "Synchronizing Asset..." : attachmentUrl ? `Attached: ${attachmentUrl.split('/').pop()}` : "Drop technical asset here"}
+                        </p>
                         <p className="text-xs text-slate-400 font-medium uppercase">PDF, PNG, JPG, MP4, MOV</p>
                       </div>
-                      <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
+                      <input type="file" disabled={uploading} className="hidden" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          setUploading(true);
                           try {
-                            const res = await uploadAsset(file);
+                            const res = await TallmanAPI.uploadAsset(file);
                             setAttachmentUrl(res.url);
                             const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
                             setAttachmentType(type);
                           } catch (err: any) { alert(err.message) }
+                          finally { setUploading(false); }
                         }
                       }} />
                     </label>
