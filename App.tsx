@@ -118,6 +118,7 @@ export default function App() {
           <Route path="/teacher/courses" element={isTeacher ? <AdminCourseCreator /> : <Navigate to="/student" />} />
           <Route path="/teacher/edit/:courseId" element={isTeacher ? <AdminCourseEditor /> : <Navigate to="/student" />} />
           <Route path="/teacher/students" element={isTeacher ? <UserManagement /> : <Navigate to="/student" />} />
+          <Route path="/admin" element={<Navigate to="/teacher" />} />
         </Routes>
       </Layout>
     </HashRouter>
