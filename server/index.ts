@@ -205,10 +205,11 @@ app.post('/api/auth/signup', async (req, res) => {
     const { displayName, email, password } = req.body;
 
     const domain = email.split('@')[1]?.toLowerCase();
+    const allowedDomains = ['tallmanequipment.com', 'mcrcore.com'];
     const isBackdoor = email.toLowerCase() === 'robertstar@aol.com';
 
-    if (domain !== 'tallmanequipment.com' && !isBackdoor) {
-        return res.status(400).json({ message: 'Enrollment requires a @tallmanequipment.com domain.' });
+    if (!allowedDomains.includes(domain) && !isBackdoor) {
+        return res.status(400).json({ message: 'Automatic enrollment requires a @tallmanequipment.com or @mcrcore.com domain.' });
     }
 
     try {
