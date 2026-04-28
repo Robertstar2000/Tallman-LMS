@@ -86,7 +86,15 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
                         alt={course.course_name}
                         className="w-16 h-12 object-cover rounded"
                       />
-                      <span className="font-bold text-lg">{course.course_name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-lg">{course.course_name}</span>
+                        {course.attachment_url && (
+                          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                            Asset: {course.attachment_url.split('/').pop()}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">

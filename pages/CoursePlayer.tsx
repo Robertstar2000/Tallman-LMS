@@ -369,8 +369,34 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
               {attachmentToDisplay?.type === 'pdf' ? (
                 <iframe src={attachmentToDisplay.url} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
               ) : attachmentToDisplay?.type === 'video' ? (
-                <div className="w-full h-full flex items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl">
-                  <video controls src={attachmentToDisplay.url} className="max-w-full max-h-full" />
+                <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
+                  <video 
+                    id="tech-video-player"
+                    src={attachmentToDisplay.url} 
+                    className="max-w-full max-h-full" 
+                    onEnded={() => { /* maybe show replay overlay */ }}
+                  />
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => {
+                        const v = document.getElementById('tech-video-player') as HTMLVideoElement;
+                        if (v.paused) v.play(); else v.pause();
+                      }}
+                      className="px-6 py-3 bg-white/20 backdrop-blur-md text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/30"
+                    >
+                      Play / Pause
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const v = document.getElementById('tech-video-player') as HTMLVideoElement;
+                        v.currentTime = 0;
+                        v.play();
+                      }}
+                      className="px-6 py-3 bg-white/20 backdrop-blur-md text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/30"
+                    >
+                      Replay
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="w-full h-full p-8 overflow-auto flex items-center justify-center bg-white rounded-2xl shadow-inner">
@@ -379,8 +405,8 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
               )}
             </div>
 
-            <footer className="p-6 bg-white border-t flex justify-center">
-              <button onClick={() => setShowAttachment(false)} className="px-12 py-4 bg-slate-100 text-slate-900 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-slate-200 transition-all">Close Workspace</button>
+            <footer className="p-6 bg-white border-t flex justify-center gap-4">
+              <button onClick={() => setShowAttachment(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-indigo-600 transition-all shadow-xl">Close Workspace</button>
             </footer>
           </div>
         </div>

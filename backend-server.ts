@@ -182,6 +182,27 @@ class TallmanAPIClient {
     });
   }
 
+  async uploadAsset(file: File): Promise<{ url: string, filename: string, type: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = localStorage.getItem('tallman_auth_token');
+    const response = await fetch(`${this.baseUrl}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
   async getMentorshipLogs(userId?: string): Promise<MentorshipLog[]> {
     return this.fetchAPI(userId ? `/admin/mentorship?userId=${userId}` : '/admin/mentorship');
   }

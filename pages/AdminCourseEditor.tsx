@@ -288,14 +288,29 @@ const AdminCourseEditor: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Resource Locator (URL)</label>
-                  <textarea
-                    className="w-full h-32 p-4 rounded-2xl border bg-slate-50 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100"
-                    placeholder="Enter https:// or cloud storage link..."
-                    value={attachmentUrl}
-                    onChange={(e) => setAttachmentUrl(e.target.value)}
-                  />
-                  <p className="text-[10px] text-slate-400 font-bold leading-tight">Note: Tallman Industrial CDN handles .pdf, .jpg, and .mp4 orchestration.</p>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Resource Registry</label>
+                  <div className="relative">
+                    <label className="flex flex-col items-center justify-center w-full h-40 border-4 border-dashed border-slate-200 rounded-[2rem] hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p className="mb-2 text-sm text-slate-500 font-bold">{attachmentUrl ? `Attached: ${attachmentUrl.split('/').pop()}` : "Drop technical asset here"}</p>
+                        <p className="text-xs text-slate-400 font-medium uppercase">PDF, PNG, JPG, MP4, MOV</p>
+                      </div>
+                      <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const res = await uploadAsset(file);
+                            setAttachmentUrl(res.url);
+                            const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
+                            setAttachmentType(type);
+                          } catch (err: any) { alert(err.message) }
+                        }
+                      }} />
+                    </label>
+                  </div>
                 </div>
               </div>
 

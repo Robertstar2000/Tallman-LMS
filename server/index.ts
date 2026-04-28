@@ -7,12 +7,48 @@ import db, { initDb } from './db.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+import multer from 'multer';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3185;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+
+// Industrial Asset Nexus: File Upload Orchestration
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Serve static assets from the nexus
+app.use('/uploads', express.static(uploadDir));
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage,
+    fileFilter: (req, file, cb) => {
+        const allowed = ['.pdf', '.jpeg', '.jpg', '.png', '.mp4', '.mov'];
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowed.includes(ext)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid industrial format. Only PDF, JPEG, PNG, MP4, MOV allowed.'));
+        }
+    }
+});
 
 async function startServer() {
     await initDb();
@@ -186,6 +222,19 @@ const requireInstructorOrAdmin = (req: any, res: any, next: any) => {
     }
     next();
 };
+
+// Asset Nexus Upload Endpoint
+app.post('/api/upload', authenticateToken, requireInstructorOrAdmin, upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ 
+        url: fileUrl,
+        filename: req.file.originalname,
+        type: path.extname(req.file.originalname).toLowerCase().slice(1)
+    });
+});
 
 app.get('/api/profile', authenticateToken, async (req: any, res) => {
     try {
