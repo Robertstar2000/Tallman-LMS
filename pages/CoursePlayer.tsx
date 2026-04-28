@@ -372,12 +372,23 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                 <h2 className="text-3xl font-black uppercase italic tracking-tighter">Technical Asset Viewer</h2>
                 <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">Registry: {attachmentToDisplay?.label} for {currentLesson.lesson_title}</p>
               </div>
-              <button
-                onClick={() => setShowAttachment(false)}
-                className="w-12 h-12 bg-white/10 hover:bg-rose-500 rounded-2xl flex items-center justify-center transition-all group"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+              <div className="flex items-center gap-3">
+                <a
+                  href={attachmentToDisplay?.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay?.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-12 h-12 bg-white/10 hover:bg-indigo-500 rounded-2xl flex items-center justify-center transition-all group"
+                  title="Enlarge Asset"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+                </a>
+                <button
+                  onClick={() => setShowAttachment(false)}
+                  className="w-12 h-12 bg-white/10 hover:bg-rose-500 rounded-2xl flex items-center justify-center transition-all group"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
             </header>
 
             <div className="flex-1 overflow-hidden bg-slate-100 p-4">
