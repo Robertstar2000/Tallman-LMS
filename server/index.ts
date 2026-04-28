@@ -250,8 +250,9 @@ app.get('/api/profile', authenticateToken, async (req: any, res) => {
         if (typeof publicUser.roles === 'string') publicUser.roles = JSON.parse(publicUser.roles);
 
         res.json(publicUser);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+    } catch (error: any) {
+        console.error("[PROFILE] Error fetching technician record:", error);
+        res.status(500).json({ message: `Server error: ${error.message || 'Unknown'}` });
     }
 });
 
