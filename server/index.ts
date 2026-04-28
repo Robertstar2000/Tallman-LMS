@@ -440,7 +440,7 @@ app.get('/api/courses/:id', async (req, res) => {
             mod.lessons = lessons;
         }
         course.modules = modules;
-
+        console.log(`[RETRIEVAL] Course '${course.course_name}' fetched with ${modules.length} modules.`);
         res.json(course);
     } catch (error) {
         console.error(error);
