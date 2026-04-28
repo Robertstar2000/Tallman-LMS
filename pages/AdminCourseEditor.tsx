@@ -261,8 +261,8 @@ const AdminCourseEditor: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
             <header className="bg-slate-900 p-8 text-white">
-              <h2 className="text-2xl font-black uppercase italic italic tracking-tighter">Industrial Asset Nexus</h2>
-              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">Registry Protocol: Attach rich technical data to unit</p>
+              <h2 className="text-2xl font-black uppercase italic tracking-tighter">Attach files and video to course units</h2>
+              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">These will be seen by the student when they take the course</p>
             </header>
 
             <div className="p-10 space-y-8">
