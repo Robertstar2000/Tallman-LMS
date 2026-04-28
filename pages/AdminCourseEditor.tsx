@@ -23,20 +23,6 @@ const AdminCourseEditor: React.FC = () => {
       setLoading(false);
     };
     fetchCourse();
-
-    // Globally suppress browser-default drop behavior to prevent navigation
-    const preventDefault = (e: any) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    window.addEventListener('dragenter', preventDefault, true);
-    window.addEventListener('dragover', preventDefault, true);
-    window.addEventListener('drop', preventDefault, true);
-    return () => {
-      window.removeEventListener('dragenter', preventDefault, true);
-      window.removeEventListener('dragover', preventDefault, true);
-      window.removeEventListener('drop', preventDefault, true);
-    };
   }, [courseId]);
 
   const handleSave = async () => {
@@ -272,16 +258,8 @@ const AdminCourseEditor: React.FC = () => {
       </div>
 
       {attachmentModal && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-sm"
-          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        >
-          <div 
-            className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden"
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl border-4 border-slate-900 overflow-hidden">
             <header className="bg-slate-900 p-8 text-white">
               <h2 className="text-2xl font-black uppercase italic tracking-tighter">Attach files and video to course units</h2>
               <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mt-1">These will be seen by the student when they take the course</p>
@@ -317,7 +295,7 @@ const AdminCourseEditor: React.FC = () => {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Resource Registry</label>
                   <div className="relative">
                     {attachmentUrl ? (
-                      <div id="nexus-preview-zone" className="w-full h-40 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
+                      <div id="nexus-preview-zone" className="w-full h-48 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
                         {attachmentType === 'image' ? (
                           <img src={attachmentUrl} className="w-full h-full object-cover" alt="Preview" />
                         ) : (
@@ -337,63 +315,47 @@ const AdminCourseEditor: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <label 
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const file = e.dataTransfer.files?.[0];
-                          if (file && !uploading) {
-                            setUploading(true);
-                            try {
-                              const res = await TallmanAPI.uploadAsset(file);
-                              const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
-                              setAttachmentUrl(res.url);
-                              setAttachmentType(type);
-                              setTimeout(() => {
-                                const btn = document.getElementById('nexus-confirm-btn');
-                                if (btn && document.getElementById('nexus-preview-zone')) {
-                                   handleAddAttachment(res.url, type);
-                                }
-                              }, 5000);
-                            } catch (err: any) { alert(err.message) }
-                            finally { setUploading(false); }
-                          }
-                        }}
-                        className="flex flex-col items-center justify-center w-full h-40 border-4 border-dashed border-slate-200 rounded-[2rem] hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <svg className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <p className="mb-2 text-sm text-slate-500 font-bold">
-                            {uploading ? "Synchronizing Asset..." : "Drop technical asset here"}
-                          </p>
-                          <p className="text-xs text-slate-400 font-medium uppercase">PDF, PNG, JPG, MP4, MOV</p>
-                        </div>
-                        <input type="file" disabled={uploading} className="hidden" id="nexus-file-input" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setUploading(true);
-                            try {
-                              const res = await TallmanAPI.uploadAsset(file);
-                              const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
-                              setAttachmentUrl(res.url);
-                              setAttachmentType(type);
-                              
-                              setTimeout(() => {
-                                // Re-fetch current state via a ref-like approach or functional check
-                                const btn = document.getElementById('nexus-confirm-btn');
-                                if (btn && document.getElementById('nexus-preview-zone')) {
-                                   handleAddAttachment(res.url, type);
-                                }
-                              }, 5000);
-                            } catch (err: any) { alert(err.message) }
-                            finally { setUploading(false); }
-                          }
-                        }} />
-                      </label>
+                      <div className="w-full h-48 border-4 border-slate-100 rounded-[2rem] flex flex-col items-center justify-center p-6 bg-slate-50">
+                        <svg className="w-12 h-12 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <button
+                          onClick={() => document.getElementById('nexus-file-input')?.click()}
+                          disabled={uploading}
+                          className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-900 transition-all disabled:opacity-50"
+                        >
+                          {uploading ? "Synchronizing..." : "Select Technical Asset"}
+                        </button>
+                        <input
+                          type="file"
+                          id="nexus-file-input"
+                          className="hidden"
+                          accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setUploading(true);
+                              try {
+                                const res = await TallmanAPI.uploadAsset(file);
+                                const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
+                                setAttachmentUrl(res.url);
+                                setAttachmentType(type);
+                                setTimeout(() => {
+                                  const btn = document.getElementById('nexus-confirm-btn');
+                                  if (btn && document.getElementById('nexus-preview-zone')) {
+                                     handleAddAttachment(res.url, type);
+                                  }
+                                }, 5000);
+                              } catch (err: any) { alert(err.message) }
+                              finally { setUploading(false); }
+                            }
+                          }}
+                        />
+                      </div>
                     )}
+                  </div>
+                </div>
+              </div>
                   </div>
                 </div>
               </div>
