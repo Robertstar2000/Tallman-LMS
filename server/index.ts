@@ -463,7 +463,7 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
     let retries = 5;
     while (retries > 0) {
         try {
-        await db.run('BEGIN DEFERRED'); // Manually start transaction
+        await db.run('BEGIN IMMEDIATE'); // Lock for writing immediately
         try {
             // 1. Upsert Course using ON CONFLICT for persistence safety
             await db.run(`

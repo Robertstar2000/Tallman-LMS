@@ -83,16 +83,20 @@ const AdminCourseEditor: React.FC = () => {
 
   const updateModuleTitle = (mIdx: number, val: string) => {
     if (!course || !course.modules) return;
-    const modules = [...course.modules];
-    modules[mIdx].module_title = val;
-    setCourse({ ...course, modules });
+    const newModules = [...course.modules];
+    newModules[mIdx] = { ...newModules[mIdx], module_title: val };
+    setCourse({ ...course, modules: newModules });
   };
 
   const updateLessonField = (mIdx: number, lIdx: number, field: keyof Lesson, val: any) => {
     if (!course || !course.modules) return;
-    const modules = [...course.modules];
-    (modules[mIdx].lessons[lIdx] as any)[field] = val;
-    setCourse({ ...course, modules });
+    const newModules = [...course.modules];
+    const targetModule = { ...newModules[mIdx] };
+    const newLessons = [...targetModule.lessons];
+    newLessons[lIdx] = { ...newLessons[lIdx], [field]: val };
+    targetModule.lessons = newLessons;
+    newModules[mIdx] = targetModule;
+    setCourse({ ...course, modules: newModules });
   };
 
   const handleAddAttachment = (explicitUrl?: string, explicitType?: any) => {
