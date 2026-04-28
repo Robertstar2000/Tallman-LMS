@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { generateCourseOutline, generateUnitContent, generateCourseThumbnail } from '../geminiService';
+import React, { useState } from 'react';
+import { generateCourseOutline, generateUnitContent, generateQuizOnly } from '../geminiService';
 import { Course, CourseStatus, Module } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { TallmanAPI } from '../backend-server';
@@ -9,6 +9,9 @@ const AdminCourseCreator: React.FC = () => {
   const [isBusy, setIsBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [topic, setTopic] = useState('');
+  const [unitCount, setUnitCount] = useState(6);
+  const [mode, setMode] = useState<'auto' | 'manual'>('auto');
+  const [includeTests, setIncludeTests] = useState(true);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
 
@@ -16,23 +19,30 @@ const AdminCourseCreator: React.FC = () => {
     if (!topic.trim()) return;
     setIsBusy(true);
     setError(null);
-    setStatus('Architecting curriculum structure...');
+
+    const courseId = `c_${Date.now()}`;
 
     try {
-      const outline = await generateCourseOutline(topic);
-      const { titles } = outline;
+      let titles: string[] = [];
+
+      if (mode === 'auto') {
+        // AUTO: LLM generates titles
+        setStatus('Architecting curriculum structure...');
+        const outline = await generateCourseOutline(topic, unitCount);
+        titles = (outline.titles || []).slice(0, unitCount);
+      } else {
+        // MANUAL: Create blank titled units
+        titles = Array.from({ length: unitCount }, (_, i) => `Unit ${i + 1}`);
+      }
+
       const total = titles.length;
       setProgress({ current: 0, total });
 
-      setStatus('Visualizing technical subject...');
-      const thumbnailUrl = await generateCourseThumbnail(topic);
-
-      const courseId = `c_${Date.now()}`;
       const newCourse: Course = {
         course_id: courseId,
         course_name: topic,
         short_description: `Enterprise technical track for ${topic}. Built for Tallman Equipment Co.`,
-        thumbnail_url: thumbnailUrl,
+        thumbnail_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop',
         category_id: 'tech',
         instructor_id: 'ai_architect',
         status: CourseStatus.PUBLISHED,
@@ -43,55 +53,91 @@ const AdminCourseCreator: React.FC = () => {
       };
 
       for (let i = 0; i < total; i++) {
-        // Mitigation for 429 RESOURCE_EXHAUSTED
-        // Increased delay to 4000ms given the heavy 4000-word manual requirement
-        if (i > 0) {
-          setStatus('Cooling down AI engines...');
-          await new Promise(r => setTimeout(r, 4000));
+        const moduleId = `m_${courseId}_${i}`;
+        let manualContent = '';
+        let quizQuestions: any[] = [];
+
+        if (mode === 'auto') {
+          // AUTO: Generate content from LLM
+          if (i > 0) {
+            setStatus('Cooling down AI engines...');
+            await new Promise(r => setTimeout(r, 3000));
+          }
+
+          setStatus(`Drafting Unit ${i + 1}: ${titles[i]}...`);
+
+          if (includeTests) {
+            // Generate content + quiz together
+            const unitData = await generateUnitContent(topic, titles[i]);
+            manualContent = unitData.content || '';
+            quizQuestions = unitData.quiz || [];
+          } else {
+            // Generate content only (no quiz call)
+            const unitData = await generateUnitContent(topic, titles[i]);
+            manualContent = unitData.content || '';
+          }
+        } else {
+          // MANUAL: Blank content
+          manualContent = `# ${titles[i]}\n\n_Enter your course content here..._`;
+
+          if (includeTests) {
+            // Generate quiz from LLM even in manual mode
+            setStatus(`Generating test for Unit ${i + 1}...`);
+            if (i > 0) await new Promise(r => setTimeout(r, 2000));
+            try {
+              quizQuestions = await generateQuizOnly(topic, titles[i]);
+            } catch {
+              quizQuestions = [
+                { question: 'Sample question 1', options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
+                { question: 'Sample question 2', options: ['A', 'B', 'C', 'D'], correctIndex: 1 },
+                { question: 'Sample question 3', options: ['A', 'B', 'C', 'D'], correctIndex: 2 }
+              ];
+            }
+          }
         }
 
-        setStatus(`Drafting Unit ${i + 1}: ${titles[i]}...`);
-        const unitData = await generateUnitContent(topic, titles[i]);
+        const lessons: any[] = [
+          {
+            lesson_id: `l_${moduleId}_doc`,
+            module_id: moduleId,
+            lesson_title: `${titles[i]}: Manual`,
+            lesson_type: 'document',
+            duration_minutes: 45,
+            content: manualContent
+          }
+        ];
 
-        const moduleId = `m_${courseId}_${i}`;
+        if (includeTests) {
+          lessons.push({
+            lesson_id: `l_${moduleId}_quiz`,
+            module_id: moduleId,
+            lesson_title: `${titles[i]}: Audit`,
+            lesson_type: 'quiz',
+            duration_minutes: 15,
+            quiz_questions: quizQuestions
+          });
+        }
+
         const module: Module = {
           module_id: moduleId,
           course_id: courseId,
           module_title: titles[i],
           position: i,
-          lessons: [
-            {
-              lesson_id: `l_${moduleId}_doc`,
-              module_id: moduleId,
-              lesson_title: `${titles[i]}: Manual`,
-              lesson_type: 'document',
-              duration_minutes: 45,
-              content: unitData.content
-            },
-            {
-              lesson_id: `l_${moduleId}_quiz`,
-              module_id: moduleId,
-              lesson_title: `${titles[i]}: Audit`,
-              lesson_type: 'quiz',
-              duration_minutes: 15,
-              quiz_questions: unitData.quiz
-            }
-          ]
+          lessons
         };
+
         newCourse.modules!.push(module);
         setProgress(p => ({ ...p, current: i + 1 }));
       }
 
       setStatus('Committing to Registry...');
       await TallmanAPI.updateCourse(newCourse);
-      navigate('/admin');
+      navigate(`/teacher/edit/${courseId}`);
     } catch (err: any) {
-      console.error(err);
-      if (err.message?.includes('403') || err.message?.includes('401') || err.message?.includes('token')) {
+      console.error("Course Generation Error:", err);
+      if ((err.status === 401 || err.status === 403) && !err.message?.toLowerCase().includes('gemini')) {
         TallmanAPI.logout();
         window.location.reload();
-      } else if (err.message?.includes("quota") || err.message?.includes("429")) {
-        setError("Rate limit or Storage Quota Exceeded. The 4000-word manuals are processing heavily. Please try again in 60 seconds.");
       } else {
         setError(err.message || 'Architecture failure. System timeout.');
       }
@@ -103,60 +149,131 @@ const AdminCourseCreator: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto py-12 px-6">
       <header className="text-center mb-12">
-        <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Curriculum Architect</h1>
-        <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px] mt-4">AI-Driven Industrial Engineering</p>
+        <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Course Creator</h1>
       </header>
 
       {isBusy ? (
-        <div className="bg-slate-900 rounded-[3rem] p-16 text-center text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-slate-800">
-            <div
-              className="h-full bg-indigo-500 transition-all duration-500"
-              style={{ width: `${(progress.current / (progress.total || 1)) * 100}%` }}
-            />
+        <div className="bg-white rounded-xl p-8 text-center border shadow-sm">
+          <div className="mb-4">
+             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${(progress.current / (progress.total || 1)) * 100}%` }}></div>
+             </div>
           </div>
-          <div className="mb-8 flex justify-center">
-            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent animate-spin rounded-full"></div>
-          </div>
-          <h2 className="text-2xl font-black uppercase italic mb-4">{status}</h2>
-          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">
-            Unit {progress.current} / {progress.total}
-          </p>
+          <h2 className="text-xl font-bold mb-2">{status}</h2>
+          <p className="text-slate-500 font-medium">Unit {progress.current} / {progress.total}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[3rem] border-2 border-slate-100 p-12 shadow-xl">
+        <div className="bg-white rounded-xl p-8 border shadow-sm">
           <div className="space-y-8">
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Target Technical Topic</label>
+            {/* Topic Input */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Topic</label>
               <input
                 type="text"
-                placeholder="e.g. Dielectric Bench Calibration SOP"
-                className="w-full px-10 py-6 rounded-[2.5rem] bg-slate-50 border-2 border-transparent focus:border-indigo-600 outline-none text-2xl font-black transition-all"
+                placeholder="e.g. Selling ropes and swivels"
+                className="w-full px-4 py-3 rounded-lg bg-slate-50 border outline-none text-lg transition-all focus:ring-2 focus:ring-blue-500"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />
             </div>
+
+            {/* Unit Count Slider */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">
+                Number of Units: <span className="text-blue-600 text-lg">{unitCount}</span>
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={20}
+                value={unitCount}
+                onChange={(e) => setUnitCount(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-slate-400 mt-1">
+                <span>1</span>
+                <span>5</span>
+                <span>10</span>
+                <span>15</span>
+                <span>20</span>
+              </div>
+            </div>
+
+            {/* Mode Toggle: Auto vs Manual */}
+            <div className="flex items-center justify-between bg-slate-50 rounded-lg p-4 border">
+              <div>
+                <p className="font-bold text-slate-700">Content Mode</p>
+                <p className="text-sm text-slate-500">
+                  {mode === 'auto'
+                    ? 'AI generates unit titles and full content'
+                    : 'Creates empty framework ready to edit'}
+                </p>
+              </div>
+              <div className="flex bg-slate-200 rounded-lg p-1">
+                <button
+                  onClick={() => setMode('auto')}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                    mode === 'auto' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  Auto
+                </button>
+                <button
+                  onClick={() => setMode('manual')}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                    mode === 'manual' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  Manual
+                </button>
+              </div>
+            </div>
+
+            {/* Test Toggle: Test vs No Test */}
+            <div className="flex items-center justify-between bg-slate-50 rounded-lg p-4 border">
+              <div>
+                <p className="font-bold text-slate-700">Quiz Questions</p>
+                <p className="text-sm text-slate-500">
+                  {includeTests
+                    ? (mode === 'auto' ? 'AI generates quiz questions per unit' : 'AI generates quiz questions for blank units')
+                    : 'No test questions will be added'}
+                </p>
+              </div>
+              <div className="flex bg-slate-200 rounded-lg p-1">
+                <button
+                  onClick={() => setIncludeTests(true)}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                    includeTests ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  Test
+                </button>
+                <button
+                  onClick={() => setIncludeTests(false)}
+                  className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                    !includeTests ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  No Test
+                </button>
+              </div>
+            </div>
+
             {error && (
-              <div className="p-6 bg-rose-50 text-rose-600 rounded-3xl text-sm font-black uppercase tracking-widest text-center border border-rose-100">
+              <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm font-bold">
                 {error}
               </div>
             )}
             <button
               onClick={startGeneration}
               disabled={!topic.trim()}
-              className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-lg shadow-2xl hover:bg-slate-900 transition-all active:scale-[0.98] disabled:opacity-20"
+              className="w-full py-4 bg-blue-600 text-white rounded-lg font-bold text-lg shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50"
             >
-              Deploy Architect
+              {mode === 'auto' ? 'Generate Course' : 'Create Framework'}
             </button>
           </div>
         </div>
       )}
-
-      <div className="mt-12 text-center">
-        <p className="text-xs text-slate-400 font-medium max-w-lg mx-auto italic">
-          Architect-built courses feature serialized units, automated technical audits, and high-density 1500+ word instructional manuals grounded in Tallman ERP and DDIN specifications.
-        </p>
-      </div>
     </div>
   );
 };

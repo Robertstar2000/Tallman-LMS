@@ -32,13 +32,16 @@ class TallmanAPIClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'API Error' }));
-      const rawMessage = error.message || 'API Error';
+      const errorData = await response.json().catch(() => ({ message: 'API Error' }));
+      const rawMessage = errorData.message || 'API Error';
       // Truncate message if it's too long (e.g. contains base64 dump)
       const sanitizedMessage = rawMessage.length > 500
         ? rawMessage.substring(0, 500) + '... (truncated)'
         : rawMessage;
-      throw new Error(sanitizedMessage);
+      
+      const error: any = new Error(sanitizedMessage);
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -93,8 +96,12 @@ class TallmanAPIClient {
     return this.fetchAPI('/admin/users');
   }
 
-  async getCourse(courseId: string): Promise<Course | null> {
-    return this.fetchAPI(`/courses/${courseId}`);
+  async getCourse(course_id: string): Promise<Course | null> {
+    return this.fetchAPI(`/courses/${course_id}`);
+  }
+
+  async deleteCourse(course_id: string): Promise<void> {
+    return this.fetchAPI(`/courses/${course_id}`, { method: 'DELETE' });
   }
 
   async updateCourse(course: Course): Promise<void> {

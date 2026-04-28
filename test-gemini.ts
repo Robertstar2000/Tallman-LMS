@@ -4,8 +4,8 @@ dotenv.config();
 
 async function test() {
     try {
-        console.log('Starting AI generation test with Gemini 2.0...');
-        const outline = await generateCourseOutline('Basics of Electrical Safety');
+        console.log('Starting AI generation test...');
+        const outline = await generateCourseOutline('Basics of Electrical Safety', 3);
         console.log('AI Generation Success:', JSON.stringify(outline, null, 2));
     } catch (err: any) {
         console.error('AI Generation Failed:', err.message || err);

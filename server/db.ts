@@ -154,7 +154,8 @@ export async function initDb() {
       rating REAL DEFAULT 0,
       difficulty TEXT,
       attachment_url TEXT,
-      attachment_type TEXT
+      attachment_type TEXT,
+      is_deleted INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS modules (
@@ -261,6 +262,15 @@ export async function initDb() {
     (dbInstance as any)._sqlite = (sqlite as any);
     sqlite.exec(sqliteSchema);
   }
+
+  // --- MIGRATIONS ---
+  try {
+    await dbInstance.run('ALTER TABLE courses ADD COLUMN is_deleted INTEGER DEFAULT 0');
+    console.log('[MIGRATION] Added is_deleted column to courses table.');
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+  // ------------------
 
   // Initialize default settings
   const checkSetting = await dbInstance.get('SELECT key FROM system_settings WHERE key = ?', ['external_url_active']);

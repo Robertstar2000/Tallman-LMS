@@ -1,0 +1,25 @@
+🌱 BOOTSTRAP: Synchronizing Industrial Records...
+
+> tallman-lms@0.0.0 seed
+> npx tsx server/seed.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.21.0
+🛠️ PERSISTENCE: Initializing Local SQLite Engine (Developer Mode)
+[Database] Connecting to SQLite at /app/tallman.db
+Industrial Persistence Registry Synchronized.
+🌱 REGISTRY DETECTED: Skipping seed operations to preserve industrial data integrity.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.13.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.13.0
+npm notice To update run: npm install -g npm@11.13.0
+npm notice
+🚀 START: Launching Tallman API Nexus (Development/Watch Mode)...
+
+> tallman-lms@0.0.0 dev:backend
+> npx tsx watch server/index.ts
+
+🛠️ PERSISTENCE: Initializing Local SQLite Engine (Developer Mode)
+[Database] Connecting to SQLite at /app/tallman.db
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+Industrial Persistence Registry Synchronized.
+Tallman API Nexus running on port 3185

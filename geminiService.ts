@@ -36,6 +36,10 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, initialDelay =
   throw lastError;
 }
 
+/**
+ * Robust JSON extraction from AI responses.
+ * Handles markdown wrappers, truncation, and embedded newlines.
+ */
 const cleanJsonResponse = (text: string): string => {
   if (!text) return "{}";
 
@@ -53,7 +57,6 @@ const cleanJsonResponse = (text: string): string => {
   }
 
   if (start === -1) {
-    // Stage 3: Brute Force Extraction if no standard start found
     const match = cleaned.match(/\{(?:.*)\}/s);
     if (match) return match[0];
     return "{}";
@@ -70,12 +73,11 @@ const cleanJsonResponse = (text: string): string => {
   for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned[i];
 
-    // Detect string boundaries
     if (char === '"' && !escaped) {
       inString = !inString;
     }
 
-    // Handle unescaped newlines inside strings by converting to \n
+    // Handle unescaped newlines inside strings by converting to \\n
     if (inString && (char === '\n' || char === '\r')) {
       result += "\\n";
       continue;
@@ -119,25 +121,94 @@ Your expertise covers:
 -- Tooling brands: DDIN, Bradley Machining (CNC Precision).
 -- Operational locations: Addison (HQ), Columbus, Lake City.`;
 
-export const generateCourseOutline = async (topic: string) => {
+const OLLAMA_ENDPOINT = 'http://10.10.20.60:11434/api/chat';
+const OLLAMA_MODEL = 'gemma4:26b';
+
+/**
+ * Attempts to generate content using the primary Ollama model.
+ * If it fails (network error, timeout, or parsing error if JSON is expected),
+ * falls back to Gemini.
+ */
+async function generateWithFallback(
+  systemInstruction: string,
+  userPrompt: string,
+  requireJSON: boolean,
+  geminiCall: () => Promise<string>
+): Promise<string> {
+  try {
+    console.log(`[Ollama] Attempting generation with ${OLLAMA_MODEL}...`);
+    const payload: any = {
+      model: OLLAMA_MODEL,
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: userPrompt }
+      ],
+      stream: false
+    };
+
+    if (requireJSON) {
+      payload.format = "json";
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
+    const res = await fetch(OLLAMA_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Ollama HTTP Error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    let text = data.message?.content || "";
+    
+    // Quick validation if JSON is required
+    if (requireJSON) {
+      const cleaned = cleanJsonResponse(text);
+      JSON.parse(cleaned); // Will throw if invalid
+      return text;
+    }
+
+    return text;
+  } catch (error: any) {
+    console.warn(`[Ollama] Generation failed, falling back to Gemini... Reason: ${error.message}`);
+    // Fallback to Gemini
+    return await geminiCall();
+  }
+}
+
+export const generateCourseOutline = async (topic: string, unitCount: number = 12) => {
   return withRetry(async () => {
     try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
-        systemInstruction: SYSTEM_CONTEXT
-      }, { timeout: 300000 });
-      const result = await model.generateContent({
-        contents: [{
-          role: 'user', parts: [{
-            text: `Draft an 12-unit technical curriculum outline for: "${topic}". 
+      const promptText = `Draft a ${unitCount}-unit technical curriculum outline for: "${topic}". 
         Each unit needs a title and a brief description.
-        Return as valid JSON: { "titles": ["Unit 1", "Unit 2", ...], "descriptions": ["Desc 1", "Desc 2", ...] }` }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json"
+        Return as valid JSON: { "titles": ["Unit 1", "Unit 2", ...], "descriptions": ["Desc 1", "Desc 2", ...] }`;
+
+      const responseText = await generateWithFallback(
+        SYSTEM_CONTEXT,
+        promptText,
+        true,
+        async () => {
+          const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: SYSTEM_CONTEXT
+          }, { timeout: 300000 });
+          const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: promptText }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          });
+          return result.response.text() || "";
         }
-      });
-      const cleaned = cleanJsonResponse(result.response.text() || "");
+      );
+
+      const cleaned = cleanJsonResponse(responseText);
       return JSON.parse(cleaned);
     } catch (error: any) {
       const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
@@ -149,77 +220,88 @@ export const generateCourseOutline = async (topic: string) => {
   });
 };
 
+/**
+ * Generate unit content (manual + quiz) from AI.
+ * Uses a two-call approach to avoid JSON corruption from huge embedded markdown.
+ */
 export const generateUnitContent = async (courseTitle: string, unitTitle: string) => {
   return withRetry(async () => {
     try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
-        systemInstruction: SYSTEM_CONTEXT
-      }, { timeout: 300000 }); // High-clearance 5-minute timeout
-      const result = await model.generateContent({
-        contents: [{
-          role: 'user', parts: [{
-            text: `Generate an exhaustive, instructional Technical Manual and a 3-question Quiz for the unit: "${courseTitle} - ${unitTitle}".
+      // Call 1: Generate the manual content as plain text (no JSON wrapping)
+      const manualPrompt = `Write an exhaustive, instructional Technical Manual for the unit: "${courseTitle} - ${unitTitle}".
         
-        CRITICAL ARCHITECTURAL RULES:
-        1. YOU MUST OUTPUT VALID JSON.
-        2. ESCAPE ALL DOUBLE QUOTES INSIDE STRINGS USING \\".
-        3. ENSURE NEWLINES ARE REPRESENTED AS \\n.
-        
-        REQUIREMENTS FOR THE MANUAL:
-        - TARGET LENGTH: At least 2200 words. This must be an extremely dense, professional, and exhaustive instructional document.
-        - PRIMARY CONTENT FOCUS: The instructional content MUST be focused entirely on the specific bussiness or technical subject defined by the titles.
-        - OPERATIONAL WRAPPER: Integrate ${tallmanData.company.common_name} operational context (Epicor P21, RubberTree, DDIN) only where relevant for logging or tooling.
+        REQUIREMENTS:
+        - TARGET LENGTH: At least 1500 words. Dense, professional instructional document.
+        - PRIMARY CONTENT FOCUS: The content MUST be focused entirely on the specific business or technical subject.
+        - OPERATIONAL WRAPPER: Integrate ${tallmanData.company.common_name} operational context (Epicor P21, RubberTree, DDIN) only where relevant.
         - STRUCTURE: Use professional Markdown with:
           - Table of Contents
           - Technical Fundamentals
-          - Multi-phase Phase SOPs
+          - Step-by-Step SOPs where relevant
           - Industry Standards
           - Troubleshooting/Specs
-        - EXCLUSION: DO NOT include the Quiz questions or answers within the "content" (Manual) field itself. The quiz MUST only exist as a separate object in the "quiz" array.
-          
-        REQUIREMENTS FOR THE QUIZ:
-        - 3 multiple-choice questions with 4 options each and a correctIndex (0-3).
         
-        Return JSON structure: 
-        { 
-          "content": "Full Markdown Manual here...", 
-          "quiz": [
-            {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0}
-          ] 
-        }` }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          maxOutputTokens: 8192,
-          temperature: 0.5
-        }
-      });
-      const text = result.response.text();
-      const cleaned = cleanJsonResponse(text || "");
-      try {
-        return JSON.parse(cleaned);
-      } catch (e: any) {
-        // Fallback: If JSON.parse still fails, try extraction
-        console.warn("Attempting Regex-based Course Reconstruction...");
-        const contentMatch = cleaned.match(/"content":\s*"(.*)",\s*"quiz":/s);
-        const quizMatch = cleaned.match(/"quiz":\s*(\[.*\])/s);
+        Return ONLY the Markdown content. Do NOT wrap in JSON. Do NOT include quiz questions.`;
 
-        if (contentMatch && quizMatch) {
-          try {
-            return {
-              content: contentMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'),
-              quiz: JSON.parse(cleanJsonResponse(quizMatch[1]))
-            };
-          } catch (innerE) {
-            // Continue to throw if extraction also fails
-          }
+      const manualContent = await generateWithFallback(
+        SYSTEM_CONTEXT,
+        manualPrompt,
+        false,
+        async () => {
+          const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: SYSTEM_CONTEXT
+          }, { timeout: 300000 });
+          const manualResult = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: manualPrompt }] }],
+            generationConfig: { maxOutputTokens: 8192, temperature: 0.5 }
+          });
+          return manualResult.response.text() || '';
         }
+      );
 
-        console.error("Architectural JSON Sync Failed. Content length:", cleaned?.length);
-        console.error("Raw Content Sample:", cleaned?.substring(cleaned.length - 100));
-        throw new Error(`Architectural Sync Failure: Malformed JSON output. The document density was too high for reliable parsing. Try Regenerating.`);
+      // Call 2: Generate quiz as structured JSON (small payload, reliable)
+      const quizPrompt = `Generate exactly 3 multiple-choice quiz questions about: "${courseTitle} - ${unitTitle}".
+        
+        Each question must have exactly 4 options and a correctIndex (0-3).
+        
+        Return as valid JSON array:
+        [
+          {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0},
+          {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 1},
+          {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 2}
+        ]`;
+
+      const quizResponseText = await generateWithFallback(
+        SYSTEM_CONTEXT,
+        quizPrompt,
+        true,
+        async () => {
+          const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: SYSTEM_CONTEXT
+          }, { timeout: 300000 });
+          const quizResult = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: quizPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              maxOutputTokens: 2048,
+              temperature: 0.5
+            }
+          });
+          return quizResult.response.text() || "[]";
+        }
+      );
+
+      const quizCleaned = cleanJsonResponse(quizResponseText);
+      let quiz = JSON.parse(quizCleaned);
+      
+      // Normalize: if the response is wrapped in an object, extract the array
+      if (!Array.isArray(quiz)) {
+        quiz = quiz.quiz || quiz.questions || quiz.quiz_questions || [];
       }
+
+      return { content: manualContent, quiz };
     } catch (error: any) {
       const isRetryable = error?.message?.includes('429') || error?.message?.toLowerCase().includes('timeout') || error?.name === 'AbortError' || error?.message?.includes('DEADLINE_EXCEEDED');
       if (!isRetryable) {
@@ -227,41 +309,50 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
       }
       throw error;
     }
-  }, 7, 10000); // 7 retries with 10s initial delay
+  }, 4, 10000);
+};
+
+/**
+ * Generate ONLY quiz questions for a unit (used separately from content generation)
+ */
+export const generateQuizOnly = async (courseTitle: string, unitTitle: string) => {
+  return withRetry(async () => {
+    const promptText = `Generate exactly 3 multiple-choice quiz questions about: "${courseTitle} - ${unitTitle}".
+        Each question must have exactly 4 options and a correctIndex (0-3).
+        Return as valid JSON array:
+        [{"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0}]`;
+
+    const responseText = await generateWithFallback(
+      SYSTEM_CONTEXT,
+      promptText,
+      true,
+      async () => {
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          systemInstruction: SYSTEM_CONTEXT
+        }, { timeout: 120000 });
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            maxOutputTokens: 2048,
+            temperature: 0.5
+          }
+        });
+        return result.response.text() || "[]";
+      }
+    );
+
+    const cleaned = cleanJsonResponse(responseText);
+    let quiz = JSON.parse(cleaned);
+    if (!Array.isArray(quiz)) {
+      quiz = quiz.quiz || quiz.questions || quiz.quiz_questions || [];
+    }
+    return quiz;
+  }, 3, 5000);
 };
 
 export const generateCourseThumbnail = async (topic: string) => {
-  return withRetry(async () => {
-    try {
-      // Utilizing the 'Nano Banana Pro' architecture (Gemini 3 Pro Image)
-      // for direct, autonomous industrial visual synthesis.
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3-pro-image-preview"
-      }, { timeout: 300000 });
-
-      const prompt = `Professional cinematic industrial photography of ${topic}. 
-      High-tech technical equipment, 720p resolution, professional lighting, sharp metallic textures, depth of field. 
-      Unique technical perspective.`;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-
-      const parts = response.candidates?.[0]?.content?.parts || [];
-      const imagePart = parts.find(p => p.inlineData);
-
-      if (imagePart && imagePart.inlineData) {
-        return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-      }
-
-      throw new Error("Visual Synthesis Failure: No image data returned from registry.");
-    } catch (error: any) {
-      const errorMsg = error.message || 'Unknown Error';
-      const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
-      console.error("Visual Sync Architecture Error:", sanitizedError);
-      // Fallback protocol: Attempt a secondary high-clearance image render
-      const fallbackPrompt = encodeURIComponent(`Professional industrial photography of ${topic}, 4k, cinematic`);
-      const randomSeed = Math.floor(Math.random() * 100000);
-      return `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1280&height=720&seed=${randomSeed}&nologo=true&model=flux`;
-    }
-  });
+  // Return a preset image - no runtime generation
+  return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop';
 };

@@ -1,10 +1,6 @@
 export enum UserRole {
-  ADMIN = 'Admin',
-  INSTRUCTOR = 'Instructor',
-  MANAGER = 'Manager',
-  LEARNER = 'Learner',
-  MENTOR = 'Mentor',
-  HOLD = 'Hold'
+  TEACHER = 'Teacher',
+  STUDENT = 'Student'
 }
 
 export enum CourseStatus {

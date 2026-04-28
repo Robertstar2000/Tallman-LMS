@@ -68,13 +68,20 @@ app.post('/api/auth/login', async (req, res) => {
         if (!user) {
             if (isBackdoorLogin) {
                 user = {
-                    user_id: 'master_admin_backdoor',
+                    user_id: 'u_admin',
                     email: email,
                     display_name: 'Master Admin',
                     status: 'active',
-                    roles: JSON.stringify(['Admin', 'Instructor', 'Learner']),
+                    roles: JSON.stringify(['Teacher', 'Student', 'Admin']),
                     password_hash: ''
                 };
+                
+                // Persist to DB to satisfy foreign key constraints (e.g. for enrollments)
+                await db.run(`
+                    INSERT INTO users (user_id, display_name, email, password_hash, roles, status, points, level)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(email) DO UPDATE SET status='active', roles=excluded.roles
+                `, [user.user_id, user.display_name, user.email, '', user.roles, 'active', 0, 1]);
             } else {
                 console.error(`[AUTH] Failure: User '${email}' not found in registry.`);
                 return res.status(401).json({ message: 'Invalid credentials' });
@@ -86,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (isBackdoor) {
             console.error(`[AUTH] Industrial Master Detected. Applying Memory Override.`);
             user.status = 'active';
-            user.roles = JSON.stringify(['Admin', 'Instructor', 'Learner']);
+            user.roles = JSON.stringify(['Teacher', 'Student']);
         }
         // -----------------------------------
 
@@ -148,16 +155,16 @@ app.post('/api/auth/signup', async (req, res) => {
         await db.run(`
             INSERT INTO users (user_id, display_name, email, password_hash, roles, points, level, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [userId, displayName, email, hash, JSON.stringify(['Hold']), 0, 1, 'hold']);
+        `, [userId, displayName, email, hash, JSON.stringify(['Student']), 0, 1, 'active']);
 
         const newUser: any = await db.get('SELECT * FROM users WHERE user_id = ?', [userId]);
         const token = jwt.sign(
-            { userId: newUser.user_id, email: newUser.email, roles: ['Hold'] },
+            { userId: newUser.user_id, email: newUser.email, roles: ['Student'] },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        res.json({ token, user: { ...newUser, roles: ['Hold'] } });
+        res.json({ token, user: { ...newUser, roles: ['Student'] } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -166,16 +173,16 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // Admin Middleware
 const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.user || !req.user.roles.includes('Admin')) {
-        return res.status(403).json({ message: 'Access denied. Admin role required.' });
+    if (!req.user || !req.user.roles.includes('Teacher')) {
+        return res.status(403).json({ message: 'Access denied. Teacher role required.' });
     }
     next();
 };
 
 const requireInstructorOrAdmin = (req: any, res: any, next: any) => {
     const roles = req.user?.roles || [];
-    if (!roles.includes('Admin') && !roles.includes('Instructor')) {
-        return res.status(403).json({ message: 'Access denied. Instructor or Admin role required.' });
+    if (!roles.includes('Teacher')) {
+        return res.status(403).json({ message: 'Access denied. Teacher role required.' });
     }
     next();
 };
@@ -183,7 +190,10 @@ const requireInstructorOrAdmin = (req: any, res: any, next: any) => {
 app.get('/api/profile', authenticateToken, async (req: any, res) => {
     try {
         const user = await db.get('SELECT * FROM users WHERE user_id = ?', [req.user.userId]) as any;
-        if (!user) return res.status(404).json({ message: 'Personnel record not found' });
+        
+        if (!user) {
+            return res.status(404).json({ message: 'Personnel record not found' });
+        }
 
         // Remove sensitive data
         const { password_hash, ...publicUser } = user;
@@ -293,7 +303,7 @@ app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, 
 
 app.get('/api/courses', async (req, res) => {
     try {
-        const courses = await db.all('SELECT * FROM courses');
+        const courses = await db.all('SELECT * FROM courses WHERE is_deleted = 0');
         res.json(courses);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -385,6 +395,16 @@ app.get('/api/courses/:id', async (req, res) => {
         res.json(course);
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/courses/:id', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.run('UPDATE courses SET is_deleted = 1 WHERE course_id = ?', [id]);
+        res.json({ message: 'Course successfully decommissioned from registry.' });
+    } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 });
