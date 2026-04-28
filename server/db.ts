@@ -88,7 +88,13 @@ if (isPostgres) {
   dbInstance = {
     async query(text, params = []) { return sqlite.prepare(text).run(params); },
     async run(text, params = []) { return sqlite.prepare(text).run(params); },
-    async get(text, params = []) { return sqlite.prepare(text).get(params); },
+    async get(text, params = []) { 
+      console.log(`[DB QUERY] Executing GET: ${text} with params:`, params);
+      const start = Date.now();
+      const result = sqlite.prepare(text).get(params);
+      console.log(`[DB QUERY] GET completed in ${Date.now() - start}ms`);
+      return result;
+    },
     async all(text, params = []) { return sqlite.prepare(text).all(params); },
     async transaction(fn) {
       // better-sqlite3 transactions must be synchronous, so we wrap the async function
