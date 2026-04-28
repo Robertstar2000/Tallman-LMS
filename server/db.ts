@@ -80,8 +80,8 @@ if (isPostgres) {
     throw err;
   }
   sqlite.pragma('foreign_keys = ON');
-  sqlite.pragma('synchronous = OFF');
-  sqlite.pragma('journal_mode = MEMORY'); // Use MEMORY for journal to reduce disk I/O
+  sqlite.pragma('synchronous = NORMAL');
+  sqlite.pragma('journal_mode = WAL'); // Use WAL for better concurrency and durability
   sqlite.pragma('busy_timeout = 10000'); // Wait up to 10s for locks
   sqlite.pragma('cache_size = -32000'); // 32MB cache
 

@@ -34,7 +34,8 @@ const AdminCourseEditor: React.FC = () => {
       navigate('/teacher');
     } catch (err: any) {
       console.error("[CRITICAL] Save Operation Failed:", err);
-      alert(`Save Failed: ${err.message || 'Unknown Error'}. Check console for full stack trace.`);
+      const msg = err.message || JSON.stringify(err) || 'Internal System Error';
+      alert(`SYSTEM FAILURE: ${msg}\n\nPlease check if your session has expired or if the network is unstable.`);
     } finally {
       setSaving(false);
     }
