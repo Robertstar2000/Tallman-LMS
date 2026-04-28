@@ -11,6 +11,7 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
+export const SERVER_BASE = API_BASE.replace('/api', '');
 
 class TallmanAPIClient {
   private getAuthToken(): string | null {

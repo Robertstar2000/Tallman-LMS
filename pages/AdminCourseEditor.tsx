@@ -123,7 +123,7 @@ const AdminCourseEditor: React.FC = () => {
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mt-1">Editing: {course.course_name}</p>
         </div>
         <div className="flex gap-4">
-          <button onClick={() => navigate('/admin')} className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Discard</button>
+          <button onClick={() => navigate('/teacher')} className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Discard</button>
           <button onClick={handleSave} disabled={saving} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-900 transition-all">
             {saving ? 'Syncing...' : 'Publish To Core'}
           </button>
@@ -297,7 +297,7 @@ const AdminCourseEditor: React.FC = () => {
                     {attachmentUrl ? (
                       <div id="nexus-preview-zone" className="w-full h-48 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
                         {attachmentType === 'image' ? (
-                          <img src={attachmentUrl} className="w-full h-full object-cover" alt="Preview" />
+                          <img src={attachmentUrl.startsWith('http') ? attachmentUrl : `${SERVER_BASE}${attachmentUrl}`} className="w-full h-full object-cover" alt="Preview" />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
                             <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-2">

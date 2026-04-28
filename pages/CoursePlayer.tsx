@@ -382,12 +382,12 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
 
             <div className="flex-1 overflow-hidden bg-slate-100 p-4">
               {attachmentToDisplay?.type === 'pdf' ? (
-                <iframe src={attachmentToDisplay.url} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
+                <iframe src={attachmentToDisplay.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay.url}`} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
               ) : attachmentToDisplay?.type === 'video' ? (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
                   <video 
                     id="tech-video-player"
-                    src={attachmentToDisplay.url} 
+                    src={attachmentToDisplay.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay.url}`} 
                     className="max-w-full max-h-full" 
                     onEnded={() => { /* maybe show replay overlay */ }}
                   />
