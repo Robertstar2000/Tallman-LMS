@@ -362,9 +362,6 @@ const AdminCourseEditor: React.FC = () => {
                   </div>
                 </div>
               </div>
-                  </div>
-                </div>
-              </div>
 
               <footer className="flex gap-4 pt-4">
                 <button

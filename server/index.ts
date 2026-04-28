@@ -79,6 +79,12 @@ app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
+// Global Request Logger
+app.use((req, res, next) => {
+    console.log(`[REQUEST] ${req.method} ${req.url}`);
+    next();
+});
+
 // Payload Error Handler
 app.use((err: any, req: any, res: any, next: any) => {
     if (err) {

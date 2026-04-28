@@ -7,7 +7,14 @@ const getApiBase = () => {
 
   // Production vs Development Registry
   const metaEnv = (import.meta as any).env || {};
-  return (metaEnv.VITE_API_URL || 'http://localhost:3185') + '/api';
+  if (metaEnv.VITE_API_URL) return metaEnv.VITE_API_URL + '/api';
+
+  // Fallback to current window host if available
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `http://${window.location.hostname}:3185/api`;
+  }
+
+  return 'http://localhost:3185/api';
 };
 
 const API_BASE = getApiBase();
