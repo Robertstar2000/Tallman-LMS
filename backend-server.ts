@@ -187,7 +187,7 @@ class TallmanAPIClient {
     formData.append('file', file);
     
     const token = localStorage.getItem('tallman_auth_token');
-    const response = await fetch(`${this.baseUrl}/upload`, {
+    const response = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -196,7 +196,7 @@ class TallmanAPIClient {
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ message: 'Upload failed' }));
         throw new Error(error.message || 'Upload failed');
     }
 
