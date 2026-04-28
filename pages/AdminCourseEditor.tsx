@@ -266,10 +266,10 @@ const AdminCourseEditor: React.FC = () => {
             </header>
 
             <div className="p-10 space-y-8">
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-2xl">
-                <p className="text-amber-800 font-bold text-sm leading-relaxed">
-                  <span className="block font-black uppercase mb-1">Architecture Guidance:</span>
-                  Industrial best practice suggests editing a **Test Question** within this specific unit to explicitly reference the attachment's technical details.
+              <div className="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-2xl">
+                <p className="text-indigo-900 font-bold text-sm leading-relaxed">
+                  <span className="block font-black uppercase mb-1 text-[10px] tracking-widest">Training Protocol:</span>
+                  Assets attached here will appear in the student viewer. Ensure videos are high-quality technical demonstrations.
                 </p>
               </div>
 
