@@ -171,6 +171,20 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
     return Math.round((passedOnFirstTry / quizLessons.length) * 100);
   }, [enrollment, flatLessons]);
 
+  const [poppedUpLessons, setPoppedUpLessons] = useState<string[]>(() => {
+    const saved = sessionStorage.getItem('tallman_popped_lessons');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    if (currentLesson?.attachment_url && !poppedUpLessons.includes(currentLesson.lesson_id)) {
+      setShowAttachment(true);
+      const newPopped = [...poppedUpLessons, currentLesson.lesson_id];
+      setPoppedUpLessons(newPopped);
+      sessionStorage.setItem('tallman_popped_lessons', JSON.stringify(newPopped));
+    }
+  }, [currentLesson, poppedUpLessons]);
+
   if (loading) return (
     <div className="h-full flex flex-col items-center justify-center p-20 text-center">
       <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent animate-spin rounded-full mb-6"></div>
@@ -245,7 +259,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                           </div>
                         </div>
                         <button onClick={() => setShowAttachment(true)} className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
-                          Launch Viewer
+                          View image or Video
                         </button>
                       </div>
                     )}
@@ -280,7 +294,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                           </div>
                         </div>
                         <button onClick={() => setShowAttachment(true)} className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg">
-                          Open Schematic
+                          View image or Video
                         </button>
                       </div>
                     )}
@@ -394,7 +408,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                       }}
                       className="px-6 py-3 bg-white/20 backdrop-blur-md text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/30"
                     >
-                      Replay
+                      Start over
                     </button>
                   </div>
                 </div>
@@ -406,7 +420,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
             </div>
 
             <footer className="p-6 bg-white border-t flex justify-center gap-4">
-              <button onClick={() => setShowAttachment(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-indigo-600 transition-all shadow-xl">Close Workspace</button>
+              <button onClick={() => setShowAttachment(false)} className="px-12 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-indigo-600 transition-all shadow-xl">Return</button>
             </footer>
           </div>
         </div>
