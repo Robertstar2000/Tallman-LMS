@@ -23,6 +23,18 @@ const AdminCourseEditor: React.FC = () => {
       setLoading(false);
     };
     fetchCourse();
+
+    // Globally suppress browser-default drop behavior to prevent navigation
+    const preventDefault = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener('dragover', preventDefault);
+    window.addEventListener('drop', preventDefault);
+    return () => {
+      window.removeEventListener('dragover', preventDefault);
+      window.removeEventListener('drop', preventDefault);
+    };
   }, [courseId]);
 
   const handleSave = async () => {
