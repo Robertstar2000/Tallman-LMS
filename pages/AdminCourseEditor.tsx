@@ -31,8 +31,9 @@ const AdminCourseEditor: React.FC = () => {
     try {
       await TallmanAPI.updateCourse(course);
       alert("System Integrity Verified: Course Updated.");
-      navigate('/admin');
+      navigate('/teacher');
     } catch (err) {
+      console.error("[CRITICAL] Save Operation Failed:", err);
       alert("Save Failed. Check console for details.");
     } finally {
       setSaving(false);

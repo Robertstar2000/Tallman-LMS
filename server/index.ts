@@ -557,7 +557,7 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
 
         const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
         console.error("Course Upsert Failed:", sanitizedError);
-        return res.status(500).json({ message: 'Sync error during master architecture update' });
+        return res.status(500).json({ message: `Sync error: ${sanitizedError}` });
     }
     }
 });
