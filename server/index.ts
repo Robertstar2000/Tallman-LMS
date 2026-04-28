@@ -63,6 +63,15 @@ app.use(cors());
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
+// Payload Error Handler
+app.use((err: any, req: any, res: any, next: any) => {
+    if (err) {
+        console.error(`[PAYLOAD ERROR] ${err.message}`);
+        return res.status(err.status || 500).json({ message: `System error: ${err.message}` });
+    }
+    next();
+});
+
 app.get('/', (req, res) => {
     res.send(`
         <div style="font-family: sans-serif; padding: 40px; text-align: center; background: #0f172a; color: white; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
@@ -464,81 +473,92 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
     let retries = 5;
     while (retries > 0) {
         try {
-        await db.run('BEGIN IMMEDIATE'); // Lock for writing immediately
-        try {
-            // 1. Upsert Course using ON CONFLICT for persistence safety
-            await db.run(`
-                INSERT INTO courses (course_id, course_name, short_description, thumbnail_url,
-                    category_id, instructor_id, status, enrolled_count, rating, difficulty, attachment_url, attachment_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(course_id) DO UPDATE SET
-                    course_name = COALESCE(excluded.course_name, courses.course_name),
-                    short_description = COALESCE(excluded.short_description, courses.short_description),
-                    thumbnail_url = COALESCE(excluded.thumbnail_url, courses.thumbnail_url),
-                    category_id = COALESCE(excluded.category_id, courses.category_id),
-                    instructor_id = COALESCE(excluded.instructor_id, courses.instructor_id),
-                    status = COALESCE(excluded.status, courses.status),
-                    enrolled_count = COALESCE(excluded.enrolled_count, courses.enrolled_count),
-                    rating = COALESCE(excluded.rating, courses.rating),
-                    difficulty = COALESCE(excluded.difficulty, courses.difficulty),
-                    attachment_url = COALESCE(excluded.attachment_url, courses.attachment_url),
-                    attachment_type = COALESCE(excluded.attachment_type, courses.attachment_type)
-            `, [
-                course.course_id,
-                course.course_name || null,
-                course.short_description || null,
-                course.thumbnail_url || null,
-                course.category_id || null,
-                course.instructor_id || null,
-                course.status || null,
-                course.enrolled_count ?? null,
-                course.rating ?? null,
-                course.difficulty || null,
-                course.attachment_url || null,
-                course.attachment_type || null
-            ]);
+            console.log(`[UPSERT] Starting transaction for course: ${course.course_id}`);
+            await db.run('BEGIN IMMEDIATE'); // Lock for writing immediately
+            try {
+                // 1. Upsert Course using ON CONFLICT for persistence safety
+                console.log(`[UPSERT] Upserting core course data: ${course.course_name}`);
+                await db.run(`
+                    INSERT INTO courses (course_id, course_name, short_description, thumbnail_url,
+                        category_id, instructor_id, status, enrolled_count, rating, difficulty, attachment_url, attachment_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(course_id) DO UPDATE SET
+                        course_name = COALESCE(excluded.course_name, courses.course_name),
+                        short_description = COALESCE(excluded.short_description, courses.short_description),
+                        thumbnail_url = COALESCE(excluded.thumbnail_url, courses.thumbnail_url),
+                        category_id = COALESCE(excluded.category_id, courses.category_id),
+                        instructor_id = COALESCE(excluded.instructor_id, courses.instructor_id),
+                        status = COALESCE(excluded.status, courses.status),
+                        enrolled_count = COALESCE(excluded.enrolled_count, courses.enrolled_count),
+                        rating = COALESCE(excluded.rating, courses.rating),
+                        difficulty = COALESCE(excluded.difficulty, courses.difficulty),
+                        attachment_url = COALESCE(excluded.attachment_url, courses.attachment_url),
+                        attachment_type = COALESCE(excluded.attachment_type, courses.attachment_type)
+                `, [
+                    course.course_id,
+                    course.course_name || null,
+                    course.short_description || null,
+                    course.thumbnail_url || null,
+                    course.category_id || null,
+                    course.instructor_id || null,
+                    course.status || null,
+                    course.enrolled_count ?? null,
+                    course.rating ?? null,
+                    course.difficulty || null,
+                    course.attachment_url || null,
+                    course.attachment_type || null
+                ]);
 
-            if (course.modules) {
-                const existingModules = await db.all('SELECT module_id FROM modules WHERE course_id = ?', [course.course_id]) as { module_id: string }[];
-                const incomingModuleIds = course.modules.map((m: any) => m.module_id);
+                if (course.modules) {
+                    console.log(`[UPSERT] Processing ${course.modules.length} modules...`);
+                    const existingModules = await db.all('SELECT module_id FROM modules WHERE course_id = ?', [course.course_id]) as { module_id: string }[];
+                    const incomingModuleIds = course.modules.map((m: any) => m.module_id);
 
-                for (const oldMod of existingModules) {
-                    if (!incomingModuleIds.includes(oldMod.module_id)) {
-                        await db.run('DELETE FROM modules WHERE module_id = ?', [oldMod.module_id]);
-                    }
-                }
-
-                for (const mod of course.modules) {
-                    await db.run('INSERT INTO modules (module_id, course_id, module_title, position) VALUES (?, ?, ?, ?) ON CONFLICT(module_id) DO UPDATE SET module_title = excluded.module_title, position = excluded.position', [mod.module_id, course.course_id, mod.module_title, mod.position]);
-
-                    if (mod.lessons) {
-                        const existingLessons = await db.all('SELECT lesson_id FROM lessons WHERE module_id = ?', [mod.module_id]) as { lesson_id: string }[];
-                        const incomingLessonIds = mod.lessons.map((l: any) => l.lesson_id);
-
-                        for (const oldLesson of existingLessons) {
-                            if (!incomingLessonIds.includes(oldLesson.lesson_id)) {
-                                await db.run('DELETE FROM lessons WHERE lesson_id = ?', [oldLesson.lesson_id]);
-                            }
+                    for (const oldMod of existingModules) {
+                        if (!incomingModuleIds.includes(oldMod.module_id)) {
+                            console.log(`[UPSERT] Deleting orphaned module: ${oldMod.module_id}`);
+                            await db.run('DELETE FROM modules WHERE module_id = ?', [oldMod.module_id]);
                         }
+                    }
 
-                        for (const lesson of mod.lessons) {
-                            await db.run('INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes, attachment_url, attachment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO UPDATE SET lesson_title = excluded.lesson_title, lesson_type = excluded.lesson_type, content = excluded.content, duration_minutes = excluded.duration_minutes, attachment_url = excluded.attachment_url, attachment_type = excluded.attachment_type', [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes, lesson.attachment_url || null, lesson.attachment_type || null]);
+                    for (const mod of course.modules) {
+                        console.log(`[UPSERT] Upserting module: ${mod.module_title} (${mod.module_id})`);
+                        await db.run('INSERT INTO modules (module_id, course_id, module_title, position) VALUES (?, ?, ?, ?) ON CONFLICT(module_id) DO UPDATE SET module_title = excluded.module_title, position = excluded.position', [mod.module_id, course.course_id, mod.module_title, mod.position]);
 
-                            if (lesson.quiz_questions) {
-                                await db.run('DELETE FROM quiz_questions WHERE lesson_id = ?', [lesson.lesson_id]);
-                                for (const q of lesson.quiz_questions) {
-                                    await db.run('INSERT INTO quiz_questions (lesson_id, question, options, correct_index) VALUES (?, ?, ?, ?)', [lesson.lesson_id, q.question, JSON.stringify(q.options), q.correct_index !== undefined ? q.correct_index : q.correctIndex]);
+                        if (mod.lessons) {
+                            console.log(`[UPSERT] Processing ${mod.lessons.length} lessons for module ${mod.module_id}`);
+                            const existingLessons = await db.all('SELECT lesson_id FROM lessons WHERE module_id = ?', [mod.module_id]) as { lesson_id: string }[];
+                            const incomingLessonIds = mod.lessons.map((l: any) => l.lesson_id);
+
+                            for (const oldLesson of existingLessons) {
+                                if (!incomingLessonIds.includes(oldLesson.lesson_id)) {
+                                    console.log(`[UPSERT] Deleting orphaned lesson: ${oldLesson.lesson_id}`);
+                                    await db.run('DELETE FROM lessons WHERE lesson_id = ?', [oldLesson.lesson_id]);
+                                }
+                            }
+
+                            for (const lesson of mod.lessons) {
+                                console.log(`[UPSERT] Upserting lesson: ${lesson.lesson_title} (${lesson.lesson_id})`);
+                                await db.run('INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes, attachment_url, attachment_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO UPDATE SET lesson_title = excluded.lesson_title, lesson_type = excluded.lesson_type, content = excluded.content, duration_minutes = excluded.duration_minutes, attachment_url = excluded.attachment_url, attachment_type = excluded.attachment_type', [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes, lesson.attachment_url || null, lesson.attachment_type || null]);
+
+                                if (lesson.quiz_questions) {
+                                    console.log(`[UPSERT] Syncing ${lesson.quiz_questions.length} quiz questions for lesson ${lesson.lesson_id}`);
+                                    await db.run('DELETE FROM quiz_questions WHERE lesson_id = ?', [lesson.lesson_id]);
+                                    for (const q of lesson.quiz_questions) {
+                                        await db.run('INSERT INTO quiz_questions (lesson_id, question, options, correct_index) VALUES (?, ?, ?, ?)', [lesson.lesson_id, q.question, JSON.stringify(q.options), q.correct_index !== undefined ? q.correct_index : q.correctIndex]);
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                console.log(`[UPSERT] Committing transaction...`);
+                await db.run('COMMIT');
+            } catch (e) {
+                console.error(`[UPSERT] Error during transaction, rolling back:`, e);
+                await db.run('ROLLBACK');
+                throw e;
             }
-            await db.run('COMMIT');
-        } catch (e) {
-            await db.run('ROLLBACK');
-            throw e;
-        }
 
         console.log(`[PERSISTENCE] Course '${course.course_name}' (ID: ${course.course_id}) synchronized.`);
         return res.json({ message: 'Course registry synchronized successfully' });
