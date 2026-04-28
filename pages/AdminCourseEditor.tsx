@@ -295,7 +295,7 @@ const AdminCourseEditor: React.FC = () => {
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Resource Registry</label>
                   <div className="relative">
                     {attachmentUrl ? (
-                      <div className="w-full h-40 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
+                      <div id="nexus-preview-zone" className="w-full h-40 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
                         {attachmentType === 'image' ? (
                           <img src={attachmentUrl} className="w-full h-full object-cover" alt="Preview" />
                         ) : (
@@ -315,7 +315,31 @@ const AdminCourseEditor: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-40 border-4 border-dashed border-slate-200 rounded-[2rem] hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group">
+                      <label 
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const file = e.dataTransfer.files?.[0];
+                          if (file && !uploading) {
+                            setUploading(true);
+                            try {
+                              const res = await TallmanAPI.uploadAsset(file);
+                              const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
+                              setAttachmentUrl(res.url);
+                              setAttachmentType(type);
+                              setTimeout(() => {
+                                const btn = document.getElementById('nexus-confirm-btn');
+                                if (btn && document.getElementById('nexus-preview-zone')) {
+                                   handleAddAttachment(res.url, type);
+                                }
+                              }, 5000);
+                            } catch (err: any) { alert(err.message) }
+                            finally { setUploading(false); }
+                          }
+                        }}
+                        className="flex flex-col items-center justify-center w-full h-40 border-4 border-dashed border-slate-200 rounded-[2rem] hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group"
+                      >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <svg className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -325,7 +349,7 @@ const AdminCourseEditor: React.FC = () => {
                           </p>
                           <p className="text-xs text-slate-400 font-medium uppercase">PDF, PNG, JPG, MP4, MOV</p>
                         </div>
-                        <input type="file" disabled={uploading} className="hidden" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
+                        <input type="file" disabled={uploading} className="hidden" id="nexus-file-input" accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov" onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
                             setUploading(true);
@@ -336,12 +360,11 @@ const AdminCourseEditor: React.FC = () => {
                               setAttachmentType(type);
                               
                               setTimeout(() => {
-                                setAttachmentUrl(currentUrl => {
-                                  if (currentUrl === res.url) {
-                                    handleAddAttachment(res.url, type);
-                                  }
-                                  return currentUrl;
-                                });
+                                // Re-fetch current state via a ref-like approach or functional check
+                                const btn = document.getElementById('nexus-confirm-btn');
+                                if (btn && document.getElementById('nexus-preview-zone')) {
+                                   handleAddAttachment(res.url, type);
+                                }
                               }, 5000);
                             } catch (err: any) { alert(err.message) }
                             finally { setUploading(false); }
@@ -361,7 +384,8 @@ const AdminCourseEditor: React.FC = () => {
                   Discard Changes
                 </button>
                 <button
-                  onClick={handleAddAttachment}
+                  id="nexus-confirm-btn"
+                  onClick={() => handleAddAttachment()}
                   className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-slate-900"
                 >
                   Confirm Attachment
