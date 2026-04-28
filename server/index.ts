@@ -460,7 +460,9 @@ app.delete('/api/courses/:id', authenticateToken, requireInstructorOrAdmin, asyn
 
 app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
     const course = req.body;
-    try {
+    let retries = 3;
+    while (retries > 0) {
+        try {
         await db.transaction(async () => {
             // 1. Upsert Course using ON CONFLICT for persistence safety
             await db.run(`
@@ -533,8 +535,15 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
         });
 
         console.log(`[PERSISTENCE] Course '${course.course_name}' (ID: ${course.course_id}) synchronized.`);
-        res.json({ message: 'Course registry synchronized successfully' });
+        return res.json({ message: 'Course registry synchronized successfully' });
     } catch (error: any) {
+        retries--;
+        if (retries > 0 && error.message.includes('disk I/O error')) {
+            console.warn(`[RETRY] Upsert failed for '${course.course_name}', retrying in 500ms... (${retries} left)`);
+            await new Promise(r => setTimeout(r, 500));
+            continue;
+        }
+
         // Sanitize error logging to prevent base64 dumps
         const errorMsg = error.message || 'Unknown Error';
         try {
@@ -543,7 +552,8 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
 
         const sanitizedError = errorMsg.length > 500 ? errorMsg.substring(0, 500) + '... (truncated)' : errorMsg;
         console.error("Course Upsert Failed:", sanitizedError);
-        res.status(500).json({ message: 'Sync error during master architecture update' });
+        return res.status(500).json({ message: 'Sync error during master architecture update' });
+    }
     }
 });
 
