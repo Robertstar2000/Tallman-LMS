@@ -95,11 +95,14 @@ const AdminCourseEditor: React.FC = () => {
     setCourse({ ...course, modules });
   };
 
-  const handleAddAttachment = () => {
+  const handleAddAttachment = (explicitUrl?: string, explicitType?: any) => {
     if (attachmentModal === null) return;
     const { mIdx, lIdx } = attachmentModal;
-    updateLessonField(mIdx, lIdx, 'attachment_url', attachmentUrl);
-    updateLessonField(mIdx, lIdx, 'attachment_type', attachmentType);
+    const finalUrl = explicitUrl || attachmentUrl;
+    const finalType = explicitType || attachmentType;
+    
+    updateLessonField(mIdx, lIdx, 'attachment_url', finalUrl);
+    updateLessonField(mIdx, lIdx, 'attachment_type', finalType);
     setAttachmentModal(null);
     setAttachmentUrl('');
   };
@@ -291,12 +294,24 @@ const AdminCourseEditor: React.FC = () => {
                 <div className="space-y-4">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Resource Registry</label>
                   <div className="relative">
-                    {attachmentUrl && attachmentType === 'image' ? (
-                      <div className="w-full h-40 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group">
-                        <img src={attachmentUrl} className="w-full h-full object-cover" alt="Preview" />
+                    {attachmentUrl ? (
+                      <div className="w-full h-40 rounded-[2rem] border-4 border-emerald-500 overflow-hidden relative group bg-slate-50">
+                        {attachmentType === 'image' ? (
+                          <img src={attachmentUrl} className="w-full h-full object-cover" alt="Preview" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                            <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-2">
+                              <span className="font-black text-[10px] text-indigo-600 uppercase">{attachmentType}</span>
+                            </div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-full px-4">{attachmentUrl.split('/').pop()}</p>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <p className="text-white font-black uppercase text-[10px] tracking-widest mb-2">Auto-Syncing in 5s...</p>
-                          <button onClick={() => setAttachmentUrl('')} className="px-4 py-2 bg-rose-500 text-white rounded-lg text-[8px] font-black uppercase">Cancel</button>
+                          <div className="flex gap-2">
+                            <button onClick={() => setAttachmentUrl('')} className="px-4 py-2 bg-rose-500 text-white rounded-lg text-[8px] font-black uppercase">Cancel</button>
+                            <button onClick={() => handleAddAttachment(attachmentUrl, attachmentType)} className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-[8px] font-black uppercase">Sync Now</button>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -306,7 +321,7 @@ const AdminCourseEditor: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                           </svg>
                           <p className="mb-2 text-sm text-slate-500 font-bold">
-                            {uploading ? "Synchronizing Asset..." : attachmentUrl ? `Attached: ${attachmentUrl.split('/').pop()}` : "Drop technical asset here"}
+                            {uploading ? "Synchronizing Asset..." : "Drop technical asset here"}
                           </p>
                           <p className="text-xs text-slate-400 font-medium uppercase">PDF, PNG, JPG, MP4, MOV</p>
                         </div>
@@ -316,22 +331,18 @@ const AdminCourseEditor: React.FC = () => {
                             setUploading(true);
                             try {
                               const res = await TallmanAPI.uploadAsset(file);
-                              setAttachmentUrl(res.url);
                               const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('image') ? 'image' : 'pdf';
+                              setAttachmentUrl(res.url);
                               setAttachmentType(type);
                               
-                              if (type === 'image') {
-                                setTimeout(() => {
-                                  // Re-check if it's still the same URL (user didn't cancel)
-                                  setAttachmentUrl(currentUrl => {
-                                    if (currentUrl === res.url) {
-                                      // Trigger the confirm button click logic
-                                      handleAddAttachment();
-                                    }
-                                    return currentUrl;
-                                  });
-                                }, 5000);
-                              }
+                              setTimeout(() => {
+                                setAttachmentUrl(currentUrl => {
+                                  if (currentUrl === res.url) {
+                                    handleAddAttachment(res.url, type);
+                                  }
+                                  return currentUrl;
+                                });
+                              }, 5000);
                             } catch (err: any) { alert(err.message) }
                             finally { setUploading(false); }
                           }
