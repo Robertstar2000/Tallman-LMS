@@ -81,8 +81,9 @@ if (isPostgres) {
   }
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('synchronous = OFF');
-  sqlite.pragma('journal_mode = DELETE');
-  sqlite.pragma('cache_size = -16000'); // 16MB cache
+  sqlite.pragma('journal_mode = MEMORY'); // Use MEMORY for journal to reduce disk I/O
+  sqlite.pragma('busy_timeout = 10000'); // Wait up to 10s for locks
+  sqlite.pragma('cache_size = -32000'); // 32MB cache
 
   dbInstance = {
     async query(text, params = []) { return sqlite.prepare(text).run(params); },

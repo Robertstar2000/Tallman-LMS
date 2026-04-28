@@ -460,10 +460,11 @@ app.delete('/api/courses/:id', authenticateToken, requireInstructorOrAdmin, asyn
 
 app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
     const course = req.body;
-    let retries = 3;
+    let retries = 5;
     while (retries > 0) {
         try {
-        await db.transaction(async () => {
+        await db.run('BEGIN DEFERRED'); // Manually start transaction
+        try {
             // 1. Upsert Course using ON CONFLICT for persistence safety
             await db.run(`
                 INSERT INTO courses (course_id, course_name, short_description, thumbnail_url,
@@ -532,15 +533,19 @@ app.post('/api/courses/upsert', authenticateToken, requireInstructorOrAdmin, asy
                     }
                 }
             }
-        });
+            await db.run('COMMIT');
+        } catch (e) {
+            await db.run('ROLLBACK');
+            throw e;
+        }
 
         console.log(`[PERSISTENCE] Course '${course.course_name}' (ID: ${course.course_id}) synchronized.`);
         return res.json({ message: 'Course registry synchronized successfully' });
     } catch (error: any) {
         retries--;
         if (retries > 0 && error.message.includes('disk I/O error')) {
-            console.warn(`[RETRY] Upsert failed for '${course.course_name}', retrying in 500ms... (${retries} left)`);
-            await new Promise(r => setTimeout(r, 500));
+            console.warn(`[RETRY] Upsert failed for '${course.course_name}', retrying in 1000ms... (${retries} left)`);
+            await new Promise(r => setTimeout(r, 1000));
             continue;
         }
 
