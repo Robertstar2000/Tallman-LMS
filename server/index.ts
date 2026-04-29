@@ -35,7 +35,7 @@ const PORT = 3185;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 // Industrial Asset Nexus: File Upload Orchestration
-const uploadDir = path.join(__dirname, '../uploads');
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }

@@ -16,11 +16,13 @@ services:
       - PORT=3185
       # SQLite Persistence Configuration
       - DB_PATH=/app/data/tallman.db
+      - UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       # Map the NFS persistent volume to the container's data directory
       # This ensures tallman.db persists across container restarts
       - /var/data/tallman-lms/data:/app/data
+      - /var/data/tallman-lms/uploads:/app/uploads
     networks:
       - tallman-internal
       - traefik_public
