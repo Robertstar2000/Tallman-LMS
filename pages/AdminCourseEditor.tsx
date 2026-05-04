@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson, UserRole } from '../types';
 import { TallmanAPI } from '../backend-server';
+import { generateCourseThumbnail, needsGeneratedCourseThumbnail } from '../courseThumbnails';
 
 const AdminCourseEditor: React.FC = () => {
   const { courseId } = useParams();
@@ -29,7 +30,11 @@ const AdminCourseEditor: React.FC = () => {
     if (!course) return;
     setSaving(true);
     try {
-      await TallmanAPI.updateCourse(course);
+      const courseToSave = needsGeneratedCourseThumbnail(course.thumbnail_url)
+        ? { ...course, thumbnail_url: generateCourseThumbnail(course.course_name) }
+        : course;
+      await TallmanAPI.updateCourse(courseToSave);
+      setCourse(courseToSave);
       alert("System Integrity Verified: Course Updated.");
       navigate('/teacher');
     } catch (err: any) {

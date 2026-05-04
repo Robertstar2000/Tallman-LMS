@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course, User, Enrollment } from '../types';
 import { TallmanAPI } from '../backend-server';
+import { generateCourseThumbnail } from '../courseThumbnails';
 
 const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -82,9 +83,12 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
                       <img
-                        src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
+                        src={course.thumbnail_url || generateCourseThumbnail(course.course_name)}
                         alt={course.course_name}
                         className="w-16 h-12 object-cover rounded"
+                        onError={(e) => {
+                          e.currentTarget.src = generateCourseThumbnail(course.course_name);
+                        }}
                       />
                       <div className="flex flex-col">
                         <span className="font-bold text-lg">{course.course_name}</span>

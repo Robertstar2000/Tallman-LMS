@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateCourseOutline, generateUnitContent, generateQuizOnly } from '../geminiService';
+import { generateCourseOutline, generateCourseThumbnail, generateUnitContent, generateQuizOnly } from '../geminiService';
 import { Course, CourseStatus, Module } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { TallmanAPI } from '../backend-server';
@@ -37,12 +37,13 @@ const AdminCourseCreator: React.FC = () => {
 
       const total = titles.length;
       setProgress({ current: 0, total });
+      const thumbnailUrl = await generateCourseThumbnail(topic);
 
       const newCourse: Course = {
         course_id: courseId,
         course_name: topic,
         short_description: `Enterprise technical track for ${topic}. Built for Tallman Equipment Co.`,
-        thumbnail_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop',
+        thumbnail_url: thumbnailUrl,
         category_id: 'tech',
         instructor_id: 'ai_architect',
         status: CourseStatus.PUBLISHED,

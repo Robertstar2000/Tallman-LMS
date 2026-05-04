@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const SEED_MODE = (process.env.SEED_MODE || 'blank').toLowerCase();
+
 const INITIAL_USERS = [
     {
         user_id: 'u_admin',
@@ -62,59 +64,108 @@ const INITIAL_USERS = [
     }
 ];
 
-async function seed() {
-    await initDb();
+const BLANK_CATEGORIES = [
+    { id: 'tech', name: 'Technical Training', icon: 'Wrench' },
+    { id: 'safety', name: 'Safety & Compliance', icon: 'Shield' },
+    { id: 'operations', name: 'Operations', icon: 'Factory' },
+    { id: 'sales', name: 'Sales & Systems', icon: 'ChartBar' }
+];
+
+const BLANK_BRANCHES = [
+    { branch_id: 'hq', name: 'Tallman HQ', primary_color: '#4f46e5', domain: 'tallmanequipment.com' }
+];
+
+const readSeedJson = (filename: string) => {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, filename), 'utf8'));
+};
+
+const setBootstrapState = async (mode: string) => {
+    await db.run(
+        'INSERT INTO system_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        ['bootstrap_mode', mode]
+    );
+    await db.run(
+        'INSERT INTO system_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        ['bootstrap_completed_at', new Date().toISOString()]
+    );
+};
+
+const detectExistingData = async () => {
+    const [users, courses, branches, categories] = await Promise.all([
+        db.get('SELECT COUNT(*) as count FROM users'),
+        db.get('SELECT COUNT(*) as count FROM courses'),
+        db.get('SELECT COUNT(*) as count FROM branches'),
+        db.get('SELECT COUNT(*) as count FROM categories')
+    ]);
+
+    return (
+        ((users as any)?.count || 0) > 0 ||
+        ((courses as any)?.count || 0) > 0 ||
+        ((branches as any)?.count || 0) > 0 ||
+        ((categories as any)?.count || 0) > 0
+    );
+};
+
+async function seedBlankRegistry() {
+    console.log('🌱 BLANK BOOTSTRAP: Initializing empty registry for first-run deployment.');
+
+    for (const branch of BLANK_BRANCHES) {
+        await db.run(
+            'INSERT INTO branches (branch_id, name, primary_color, domain) VALUES (?, ?, ?, ?) ON CONFLICT(branch_id) DO NOTHING',
+            [branch.branch_id, branch.name, branch.primary_color, branch.domain]
+        );
+    }
+
+    for (const category of BLANK_CATEGORIES) {
+        await db.run(
+            'INSERT INTO categories (id, name, icon) VALUES (?, ?, ?) ON CONFLICT(id) DO NOTHING',
+            [category.id, category.name, category.icon]
+        );
+    }
+
+    await setBootstrapState('blank');
+    console.log('✅ BLANK BOOTSTRAP SUCCESS: Empty registry ready for Docker/Swarm startup.');
+}
+
+async function seedSampleRegistry() {
+    console.log('🌱 SAMPLE BOOTSTRAP: Synchronizing demo registry records...');
 
     const salt = await bcrypt.genSalt(10);
+    const branches = readSeedJson('branches-seed.json');
+    const categories = readSeedJson('categories-seed.json');
+    const courses = readSeedJson('courses-seed.json');
+    const badges = readSeedJson('badges-seed.json');
+    const forumPosts = readSeedJson('forum-seed.json');
+    const mentorshipLogs = readSeedJson('mentorship-seed.json');
+    const userBadges = readSeedJson('user-badges-seed.json');
 
-    // Load Data
-    const branches = JSON.parse(fs.readFileSync(path.join(__dirname, 'branches-seed.json'), 'utf8'));
-    const categories = JSON.parse(fs.readFileSync(path.join(__dirname, 'categories-seed.json'), 'utf8'));
-    const courses = JSON.parse(fs.readFileSync(path.join(__dirname, 'courses-seed.json'), 'utf8'));
-    const badges = JSON.parse(fs.readFileSync(path.join(__dirname, 'badges-seed.json'), 'utf8'));
-    const forumPosts = JSON.parse(fs.readFileSync(path.join(__dirname, 'forum-seed.json'), 'utf8'));
-    const mentorshipLogs = JSON.parse(fs.readFileSync(path.join(__dirname, 'mentorship-seed.json'), 'utf8'));
-    const userBadges = JSON.parse(fs.readFileSync(path.join(__dirname, 'user-badges-seed.json'), 'utf8'));
-
-    // Check if registry is already populated
-    try {
-        const existingUsers = await db.get('SELECT COUNT(*) as count FROM users');
-        if (existingUsers && (existingUsers as any).count > 0) {
-            console.log("🌱 REGISTRY DETECTED: Skipping seed operations to preserve industrial data integrity.");
-            process.exit(0);
-        }
-    } catch (e) {
-        // Table likely doesn't exist, proceed with seed
+    for (const branch of branches) {
+        await db.run(
+            'INSERT INTO branches (branch_id, name, primary_color, domain) VALUES (?, ?, ?, ?) ON CONFLICT(branch_id) DO NOTHING',
+            [branch.branch_id, branch.name, branch.primary_color, branch.domain]
+        );
     }
 
-    console.log("🌱 STARTING SEED: Synchronizing Industrial Records...");
-
-    // Seed Branches
-    for (const b of branches) {
-        await db.run('INSERT INTO branches (branch_id, name, primary_color, domain) VALUES (?, ?, ?, ?) ON CONFLICT(branch_id) DO NOTHING', [b.branch_id, b.name, b.primary_color, b.domain]);
+    for (const category of categories) {
+        await db.run(
+            'INSERT INTO categories (id, name, icon) VALUES (?, ?, ?) ON CONFLICT(id) DO NOTHING',
+            [category.id, category.name, category.icon]
+        );
     }
 
-    // Seed Categories
-    for (const c of categories) {
-        await db.run('INSERT INTO categories (id, name, icon) VALUES (?, ?, ?) ON CONFLICT(id) DO NOTHING', [c.id, c.name, c.icon]);
-    }
+    for (const user of INITIAL_USERS) {
+        const hash = await bcrypt.hash(user.password, salt);
 
-    // 1. SEED USERS FIRST (Identity Nexus)
-    for (const u of INITIAL_USERS) {
-        const hash = await bcrypt.hash(u.password, salt);
-
-        // Surgical Reset for the Backdoor/Admin user to ensure they are never locked out
-        // We update by EMAIL to handle cases where they might have a different user_id from manual signup
-        if (u.email.toLowerCase() === 'robertstar@aol.com') {
+        if (user.email.toLowerCase() === 'robertstar@aol.com') {
             await db.run(`
-                UPDATE users SET 
+                UPDATE users SET
                     user_id = ?,
-                    status = 'active', 
-                    roles = ?, 
+                    status = 'active',
+                    roles = ?,
                     password_hash = ?,
                     display_name = ?
                 WHERE LOWER(email) = LOWER(?)
-            `, [u.user_id, JSON.stringify(u.roles), hash, u.display_name, u.email]);
+            `, [user.user_id, JSON.stringify(user.roles), hash, user.display_name, user.email]);
         }
 
         await db.run(`
@@ -125,56 +176,71 @@ async function seed() {
                 display_name = excluded.display_name,
                 roles = excluded.roles,
                 status = excluded.status
-        `, [u.user_id, u.display_name, u.email, hash, u.avatar_url, u.points, u.level, u.branch_id, u.department, JSON.stringify(u.roles), (u as any).status || 'active']);
+        `, [user.user_id, user.display_name, user.email, hash, user.avatar_url, user.points, user.level, user.branch_id, user.department, JSON.stringify(user.roles), user.status || 'active']);
     }
 
-    // 2. SEED DEPENDENT RELATIONSHIPS
-    // Seed Badges
-    for (const b of badges) {
-        await db.run('INSERT INTO badges (badge_id, badge_name, badge_image_url, criteria) VALUES (?, ?, ?, ?) ON CONFLICT(badge_id) DO NOTHING', [b.badge_id, b.badge_name, b.badge_image_url, b.criteria]);
+    for (const badge of badges) {
+        await db.run(
+            'INSERT INTO badges (badge_id, badge_name, badge_image_url, criteria) VALUES (?, ?, ?, ?) ON CONFLICT(badge_id) DO NOTHING',
+            [badge.badge_id, badge.badge_name, badge.badge_image_url, badge.criteria]
+        );
     }
 
-    // Seed Forum Posts
-    for (const p of forumPosts) {
-        await db.run('INSERT INTO forum_posts (id, author_name, author_avatar, title, content, category, replies, is_pinned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING', [p.id, p.author_name, p.author_avatar, p.title, p.content, p.category, p.replies, p.is_pinned ? 1 : 0, p.timestamp]);
+    for (const post of forumPosts) {
+        await db.run(
+            'INSERT INTO forum_posts (id, author_name, author_avatar, title, content, category, replies, is_pinned, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING',
+            [post.id, post.author_name, post.author_avatar, post.title, post.content, post.category, post.replies, post.is_pinned ? 1 : 0, post.timestamp]
+        );
     }
 
-    // Seed Mentorship
-    for (const m of mentorshipLogs) {
+    for (const log of mentorshipLogs) {
         try {
-            await db.run('INSERT INTO mentorship_logs (id, mentor_id, mentee_id, mentee_name, hours, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING', [m.id, m.mentor_id, m.mentee_id, m.mentee_name, m.hours, m.date, m.notes]);
+            await db.run(
+                'INSERT INTO mentorship_logs (id, mentor_id, mentee_id, mentee_name, hours, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING',
+                [log.id, log.mentor_id, log.mentee_id, log.mentee_name, log.hours, log.date, log.notes]
+            );
         } catch (e) {
-            console.error(`⚠️  RELATIONAL FAULT: Mentorship log ${m.id} failed to bind. Skipping.`);
+            console.error(`⚠️ RELATIONAL FAULT: Mentorship log ${log.id} failed to bind. Skipping.`);
         }
     }
 
-    // Seed User Badges
-    for (const ub of userBadges) {
+    for (const userBadge of userBadges) {
         try {
-            await db.run('INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [ub.user_id, ub.badge_id, ub.earned_at]);
+            await db.run(
+                'INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+                [userBadge.user_id, userBadge.badge_id, userBadge.earned_at]
+            );
         } catch (e) {
-            console.error(`⚠️  RELATIONAL FAULT: User badge assignment for ${ub.user_id} failed to bind. Skipping.`);
+            console.error(`⚠️ RELATIONAL FAULT: User badge assignment for ${userBadge.user_id} failed to bind. Skipping.`);
         }
     }
 
-    // Seed Courses, Modules, and Lessons
-    for (const c of courses) {
+    for (const course of courses) {
         await db.run(`
             INSERT INTO courses (course_id, course_name, short_description, thumbnail_url, category_id, instructor_id, status, enrolled_count, rating, difficulty)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(course_id) DO NOTHING
-        `, [c.course_id, c.course_name, c.short_description, c.thumbnail_url, c.category_id, c.instructor_id, c.status, c.enrolled_count, c.rating, c.difficulty]);
+        `, [course.course_id, course.course_name, course.short_description, course.thumbnail_url, course.category_id, course.instructor_id, course.status, course.enrolled_count, course.rating, course.difficulty]);
 
-        if (c.modules) {
-            for (const mod of c.modules) {
-                await db.run('INSERT INTO modules (module_id, course_id, module_title, position) VALUES (?, ?, ?, ?) ON CONFLICT(module_id) DO NOTHING', [mod.module_id, c.course_id, mod.module_title, mod.position]);
+        if (course.modules) {
+            for (const mod of course.modules) {
+                await db.run(
+                    'INSERT INTO modules (module_id, course_id, module_title, position) VALUES (?, ?, ?, ?) ON CONFLICT(module_id) DO NOTHING',
+                    [mod.module_id, course.course_id, mod.module_title, mod.position]
+                );
                 if (mod.lessons) {
                     for (const lesson of mod.lessons) {
-                        await db.run('INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO NOTHING', [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes]);
+                        await db.run(
+                            'INSERT INTO lessons (lesson_id, module_id, lesson_title, lesson_type, content, duration_minutes) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(lesson_id) DO NOTHING',
+                            [lesson.lesson_id, mod.module_id, lesson.lesson_title, lesson.lesson_type, lesson.content || '', lesson.duration_minutes]
+                        );
                         if (lesson.quiz_questions) {
                             await db.run('DELETE FROM quiz_questions WHERE lesson_id = ?', [lesson.lesson_id]);
                             for (const q of lesson.quiz_questions) {
-                                await db.run('INSERT INTO quiz_questions (lesson_id, question, options, correct_index) VALUES (?, ?, ?, ?)', [lesson.lesson_id, q.question, JSON.stringify(q.options), q.correct_index]);
+                                await db.run(
+                                    'INSERT INTO quiz_questions (lesson_id, question, options, correct_index) VALUES (?, ?, ?, ?)',
+                                    [lesson.lesson_id, q.question, JSON.stringify(q.options), q.correct_index]
+                                );
                             }
                         }
                     }
@@ -183,7 +249,32 @@ async function seed() {
         }
     }
 
-    console.log('✅ SEED SUCCESS: Registry fully populated.');
+    await setBootstrapState('sample');
+    console.log('✅ SAMPLE BOOTSTRAP SUCCESS: Registry fully populated.');
+}
+
+async function seed() {
+    await initDb();
+
+    const bootstrapMode = await db.get('SELECT value FROM system_settings WHERE key = ?', ['bootstrap_mode']);
+    if ((bootstrapMode as any)?.value) {
+        console.log(`🌱 BOOTSTRAP DETECTED: Registry already initialized in '${(bootstrapMode as any).value}' mode. Skipping.`);
+        process.exit(0);
+    }
+
+    const existingData = await detectExistingData();
+    if (existingData) {
+        console.log('🌱 REGISTRY DETECTED: Existing data found. Marking registry as pre-initialized and skipping seed.');
+        await setBootstrapState('preserved');
+        process.exit(0);
+    }
+
+    if (SEED_MODE === 'sample') {
+        await seedSampleRegistry();
+    } else {
+        await seedBlankRegistry();
+    }
+
     process.exit(0);
 }
 

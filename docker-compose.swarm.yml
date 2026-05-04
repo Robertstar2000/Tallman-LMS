@@ -25,6 +25,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DB_PATH=/data/tallman.db
+      - SEED_MODE=blank
       - VITE_API_URL=https://lms.tallmanequipment.com
       - UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY}

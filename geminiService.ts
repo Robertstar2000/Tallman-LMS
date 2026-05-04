@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { tallmanData } from "./backend-tallman";
+import { generateCourseThumbnail as buildCourseThumbnail } from "./courseThumbnails";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
 
@@ -353,6 +354,5 @@ export const generateQuizOnly = async (courseTitle: string, unitTitle: string) =
 };
 
 export const generateCourseThumbnail = async (topic: string) => {
-  // Return a preset image - no runtime generation
-  return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop';
+  return buildCourseThumbnail(topic);
 };
