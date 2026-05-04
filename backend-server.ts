@@ -5,16 +5,8 @@ const getApiBase = () => {
   const override = localStorage.getItem('tallman_api_override');
   if (override) return `${override}/api`;
 
-  // Production vs Development Registry
-  const metaEnv = (import.meta as any).env || {};
-  if (metaEnv.VITE_API_URL) return metaEnv.VITE_API_URL + '/api';
-
-  // Fallback to current window host if available
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `http://${window.location.hostname}:3185/api`;
-  }
-
-  return 'http://localhost:3185/api';
+  // Use relative URLs for same-origin API calls
+  return '/api';
 };
 
 const API_BASE = getApiBase();
@@ -121,21 +113,26 @@ class TallmanAPIClient {
     });
   }
 
-  async getEnrollments(userId?: string): Promise<Enrollment[]> {
-    if (userId) return this.fetchAPI(`/enrollments?userId=${userId}`); // Hypothetical filter if added later
-    // If we are in admin mode (refreshData has no userId), try to get all
+  async getEnrollments(): Promise<Enrollment[]> {
     try {
       return await this.fetchAPI('/admin/enrollments');
     } catch (e) {
-      // Fallback to personal if admin fails
       return this.fetchAPI('/enrollments');
     }
   }
 
-  async enroll(userId: string, courseId: string): Promise<Enrollment> {
+  async getMyEnrollments(): Promise<Enrollment[]> {
+    return this.fetchAPI('/enrollments');
+  }
+
+  async adminGetEnrollments(): Promise<Enrollment[]> {
+    return this.fetchAPI('/admin/enrollments');
+  }
+
+  async assignCourse(userId: string, courseId: string): Promise<Enrollment> {
     return this.fetchAPI('/enrollments', {
       method: 'POST',
-      body: JSON.stringify({ courseId })
+      body: JSON.stringify({ userId, courseId })
     });
   }
 
@@ -146,10 +143,14 @@ class TallmanAPIClient {
     });
   }
 
-  async recordQuizAttempt(enrollmentId: string, lessonId: string, passed: boolean): Promise<Enrollment> {
+  async recordQuizAttempt(
+    enrollmentId: string,
+    lessonId: string,
+    answers: number[]
+  ): Promise<{ enrollment: Enrollment; passed: boolean; score: number; passThreshold: number }> {
     return this.fetchAPI(`/enrollments/${enrollmentId}/quiz`, {
       method: 'POST',
-      body: JSON.stringify({ lessonId, passed })
+      body: JSON.stringify({ lessonId, answers })
     });
   }
 

@@ -13,9 +13,10 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const projectRoot = process.cwd();
 
 // Redirect logs to file for remote terminal access
-const logFile = fs.createWriteStream(path.join(__dirname, '../server-debug.log'), { flags: 'a' });
+const logFile = fs.createWriteStream(path.join(projectRoot, 'server-debug.log'), { flags: 'a' });
 const logStdout = process.stdout;
 
 console.log = (...args) => {
@@ -31,11 +32,11 @@ console.error = (...args) => {
 };
 
 const app = express();
-const PORT = 3185;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 // Industrial Asset Nexus: File Upload Orchestration
-const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
+const uploadDir = process.env.UPLOAD_DIR || path.join(projectRoot, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -94,16 +95,12 @@ app.use((err: any, req: any, res: any, next: any) => {
     next();
 });
 
+// Serve frontend static files
+const distPath = path.join(projectRoot, 'dist');
+app.use(express.static(distPath));
+
 app.get('/', (req, res) => {
-    res.send(`
-        <div style="font-family: sans-serif; padding: 40px; text-align: center; background: #0f172a; color: white; min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
-            <h1 style="font-style: italic; font-weight: 900; letter-spacing: -0.05em; text-transform: uppercase;">Tallman API Nexus</h1>
-            <p style="color: #94a3b8; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.8rem;">Gateway Status: Online</p>
-            <div style="margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 20px; display: inline-block; margin: 20px auto;">
-                <p style="font-size: 0.9rem;">This is the API backend. To access the user interface, please use the <strong>Frontend Tunnel URL</strong> (Port 3180).</p>
-            </div>
-        </div>
-    `);
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // Auth Middleware
@@ -118,6 +115,21 @@ const authenticateToken = (req: any, res: any, next: any) => {
         req.user = user;
         next();
     });
+};
+
+const hasTeacherRole = (req: any) => {
+    const roles = req.user?.roles;
+    return Array.isArray(roles) && roles.includes('Teacher');
+};
+
+const canAccessUserScopedResource = (req: any, userId: string) => {
+    return hasTeacherRole(req) || req.user?.userId === userId;
+};
+
+const getMutationCount = (result: any) => {
+    if (typeof result?.changes === 'number') return result.changes;
+    if (typeof result?.rowCount === 'number') return result.rowCount;
+    return 0;
 };
 
 // --- Auth Routes ---
@@ -232,7 +244,8 @@ app.post('/api/auth/signup', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        res.json({ token, user: { ...newUser, roles: ['Student'] } });
+        const { password_hash, ...userWithoutPassword } = newUser;
+        res.json({ token, user: { ...userWithoutPassword, roles: ['Student'] } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -241,15 +254,14 @@ app.post('/api/auth/signup', async (req, res) => {
 
 // Admin Middleware
 const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.user || !req.user.roles.includes('Teacher')) {
+    if (!req.user || !hasTeacherRole(req)) {
         return res.status(403).json({ message: 'Access denied. Teacher role required.' });
     }
     next();
 };
 
 const requireInstructorOrAdmin = (req: any, res: any, next: any) => {
-    const roles = req.user?.roles || [];
-    if (!roles.includes('Teacher')) {
+    if (!hasTeacherRole(req)) {
         return res.status(403).json({ message: 'Access denied. Teacher role required.' });
     }
     next();
@@ -383,9 +395,17 @@ app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, 
     }
 });
 
-app.get('/api/courses', async (req, res) => {
+app.get('/api/courses', authenticateToken, async (req: any, res) => {
     try {
-        const courses = await db.all('SELECT * FROM courses WHERE is_deleted = 0');
+        const isTeacher = hasTeacherRole(req);
+        const courses = isTeacher
+            ? await db.all('SELECT * FROM courses WHERE is_deleted = 0')
+            : await db.all(`
+                SELECT DISTINCT c.*
+                FROM courses c
+                JOIN enrollments e ON e.course_id = c.course_id
+                WHERE c.is_deleted = 0 AND e.user_id = ?
+            `, [req.user.userId]);
         res.json(courses);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -410,11 +430,50 @@ app.get('/api/branches', async (req, res) => {
     }
 });
 
-app.get('/api/admin/mentorship', authenticateToken, async (req, res) => {
+app.get('/api/admin/mentorship', authenticateToken, requireInstructorOrAdmin, async (req: any, res) => {
     try {
-        const logs = await db.all('SELECT * FROM mentorship_logs');
+        const { userId } = req.query;
+        const logs = userId
+            ? await db.all(
+                'SELECT * FROM mentorship_logs WHERE mentor_id = ? OR mentee_id = ? ORDER BY date DESC',
+                [userId, userId]
+            )
+            : await db.all('SELECT * FROM mentorship_logs ORDER BY date DESC');
         res.json(logs);
     } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.post('/api/admin/mentorship', authenticateToken, requireInstructorOrAdmin, async (req: any, res) => {
+    const { mentee_id, mentee_name, hours, date, notes } = req.body;
+    const mentorId = req.user.userId;
+
+    if (!mentee_id || !mentee_name || !hours || !date) {
+        return res.status(400).json({ message: 'Missing mentorship log fields.' });
+    }
+
+    try {
+        const id = `m_${Date.now()}`;
+        await db.run(`
+            INSERT INTO mentorship_logs (id, mentor_id, mentee_id, mentee_name, hours, date, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [id, mentorId, mentee_id, mentee_name, hours, date, notes || null]);
+        res.status(201).json({ id });
+    } catch (error) {
+        console.error('[MENTORSHIP] Failed to create log:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/admin/mentorship/:id', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await db.run('DELETE FROM mentorship_logs WHERE id = ?', [id]);
+        res.json({ message: 'Mentorship record deleted.' });
+    } catch (error) {
+        console.error('[MENTORSHIP] Failed to delete log:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -437,8 +496,11 @@ app.get('/api/badges', async (req, res) => {
     }
 });
 
-app.get('/api/users/:userId/badges', async (req, res) => {
+app.get('/api/users/:userId/badges', authenticateToken, async (req: any, res) => {
     const { userId } = req.params;
+    if (!canAccessUserScopedResource(req, userId)) {
+        return res.status(403).json({ message: 'Access denied.' });
+    }
     try {
         const badges = await db.all(`
             SELECT b.*, ub.earned_at 
@@ -452,9 +514,20 @@ app.get('/api/users/:userId/badges', async (req, res) => {
     }
 });
 
-app.get('/api/courses/:id', async (req, res) => {
+app.get('/api/courses/:id', authenticateToken, async (req: any, res) => {
     const { id } = req.params;
     try {
+        const isTeacher = hasTeacherRole(req);
+        if (!isTeacher) {
+            const enrollment = await db.get(
+                'SELECT enrollment_id FROM enrollments WHERE user_id = ? AND course_id = ?',
+                [req.user.userId, id]
+            );
+            if (!enrollment) {
+                return res.status(403).json({ message: 'Course access denied. This course is not assigned to your account.' });
+            }
+        }
+
         const course: any = await db.get('SELECT * FROM courses WHERE course_id = ?', [id]);
         if (!course) return res.status(404).json({ message: 'Course not found' });
 
@@ -464,10 +537,16 @@ app.get('/api/courses/:id', async (req, res) => {
             for (const lesson of lessons) {
                 if (lesson.lesson_type === 'quiz') {
                     const questions = await db.all('SELECT * FROM quiz_questions WHERE lesson_id = ?', [lesson.lesson_id]);
-                    lesson.quiz_questions = questions.map((q: any) => ({
-                        ...q,
-                        options: JSON.parse(q.options)
-                    }));
+                    lesson.quiz_questions = questions.map((q: any) => {
+                        const baseQuestion: any = {
+                            question: q.question,
+                            options: JSON.parse(q.options)
+                        };
+                        if (isTeacher) {
+                            baseQuestion.correct_index = q.correct_index;
+                        }
+                        return baseQuestion;
+                    });
                 }
             }
             mod.lessons = lessons;
@@ -616,7 +695,13 @@ app.post('/api/log-error', (req, res) => {
 
 const hydrateEnrollment = async (enrollment: any) => {
     if (!enrollment) return null;
-    const completions = await db.all('SELECT lesson_id FROM lesson_completions WHERE user_id = ?', [enrollment.user_id]) as { lesson_id: string }[];
+    const completions = await db.all(`
+        SELECT lc.lesson_id
+        FROM lesson_completions lc
+        JOIN lessons l ON l.lesson_id = lc.lesson_id
+        JOIN modules m ON m.module_id = l.module_id
+        WHERE lc.user_id = ? AND m.course_id = ?
+    `, [enrollment.user_id, enrollment.course_id]) as { lesson_id: string }[];
     return {
         ...enrollment,
         completed_lesson_ids: completions.map(c => c.lesson_id)
@@ -643,21 +728,42 @@ app.get('/api/admin/enrollments', authenticateToken, requireInstructorOrAdmin, a
     }
 });
 
-app.post('/api/enrollments', authenticateToken, async (req: any, res) => {
-    const { courseId } = req.body;
-    const userId = req.user.userId;
+app.post('/api/enrollments', authenticateToken, requireInstructorOrAdmin, async (req: any, res) => {
+    const { courseId, userId } = req.body;
+    const targetUserId = userId?.trim();
     const enrollmentId = `e_${Date.now()}`;
     const enrolledAt = new Date().toISOString();
 
+    if (!courseId || !targetUserId) {
+        return res.status(400).json({ message: 'Both courseId and userId are required.' });
+    }
+
     try {
-        const existing = await db.get('SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?', [userId, courseId]);
+        const [existingCourse, existingUser] = await Promise.all([
+            db.get('SELECT course_id FROM courses WHERE course_id = ? AND is_deleted = 0', [courseId]),
+            db.get('SELECT user_id FROM users WHERE user_id = ?', [targetUserId])
+        ]);
+
+        if (!existingCourse) {
+            return res.status(404).json({ message: 'Course not found.' });
+        }
+
+        if (!existingUser) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const existing = await db.get('SELECT * FROM enrollments WHERE user_id = ? AND course_id = ?', [targetUserId, courseId]);
         if (existing) return res.json(await hydrateEnrollment(existing));
 
-        await db.run('INSERT INTO enrollments (enrollment_id, user_id, course_id, status, enrolled_at) VALUES (?, ?, ?, ?, ?)', [enrollmentId, userId, courseId, 'active', enrolledAt]);
+        await db.run(
+            'INSERT INTO enrollments (enrollment_id, user_id, course_id, status, enrolled_at) VALUES (?, ?, ?, ?, ?)',
+            [enrollmentId, targetUserId, courseId, 'active', enrolledAt]
+        );
 
         const newEnrollment = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ?', [enrollmentId]);
-        res.json(await hydrateEnrollment(newEnrollment));
+        res.status(201).json(await hydrateEnrollment(newEnrollment));
     } catch (error) {
+        console.error('[ENROLLMENT] Assignment failed:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -704,8 +810,21 @@ app.post('/api/enrollments/:id/progress', authenticateToken, async (req: any, re
     try {
         const enrollment: any = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ? AND user_id = ?', [id, userId]);
         if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+        const lesson = await db.get(`
+            SELECT l.lesson_id
+            FROM lessons l
+            JOIN modules m ON m.module_id = l.module_id
+            WHERE l.lesson_id = ? AND m.course_id = ? AND l.lesson_type <> 'quiz'
+        `, [lessonId, enrollment.course_id]);
+        if (!lesson) {
+            return res.status(400).json({ message: 'Lesson does not belong to this course, or it requires quiz submission.' });
+        }
 
-        await db.run('INSERT INTO lesson_completions (user_id, lesson_id, completed_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [userId, lessonId, new Date().toISOString()]);
+        const completionResult = await db.run(
+            'INSERT INTO lesson_completions (user_id, lesson_id, completed_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+            [userId, lessonId, new Date().toISOString()]
+        );
+        const isNewCompletion = getMutationCount(completionResult) > 0;
 
         const totalLessons: any = await db.get(`
       SELECT COUNT(*) as count FROM lessons 
@@ -720,19 +839,19 @@ app.post('/api/enrollments/:id/progress', authenticateToken, async (req: any, re
       )
     `, [userId, enrollment.course_id]);
 
-        const progress = Math.round((completedLessons.count / totalLessons.count) * 100);
+        const totalLessonCount = totalLessons?.count || 0;
+        const progress = totalLessonCount === 0
+            ? 0
+            : Math.round((completedLessons.count / totalLessonCount) * 100);
         const status = progress >= 100 ? 'completed' : 'active';
 
         await db.run('UPDATE enrollments SET progress_percent = ?, status = ? WHERE enrollment_id = ?', [progress, status, id]);
 
-        // Award points for completing a unit
-        await db.run('UPDATE users SET points = points + 10 WHERE user_id = ?', [userId]);
-
-        // Recalculate level based on XP (e.g. 100 XP per level)
-        await db.run('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?', [userId]);
-
-        // Run badge audit
-        await checkAndAwardBadges(userId);
+        if (isNewCompletion) {
+            await db.run('UPDATE users SET points = points + 10 WHERE user_id = ?', [userId]);
+            await db.run('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?', [userId]);
+            await checkAndAwardBadges(userId);
+        }
 
         const updated = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ?', [id]);
         res.json(await hydrateEnrollment(updated));
@@ -744,13 +863,44 @@ app.post('/api/enrollments/:id/progress', authenticateToken, async (req: any, re
 
 app.post('/api/enrollments/:id/quiz', authenticateToken, async (req: any, res) => {
     const { id } = req.params;
-    const { lessonId, passed } = req.body;
+    const { lessonId, answers } = req.body;
     const userId = req.user.userId;
 
     try {
+        const enrollment: any = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ? AND user_id = ?', [id, userId]);
+        if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+
+        const lesson = await db.get(`
+            SELECT l.lesson_id
+            FROM lessons l
+            JOIN modules m ON m.module_id = l.module_id
+            WHERE l.lesson_id = ? AND m.course_id = ? AND l.lesson_type = 'quiz'
+        `, [lessonId, enrollment.course_id]);
+        if (!lesson) {
+            return res.status(400).json({ message: 'Quiz does not belong to this course.' });
+        }
+
+        const quizQuestions = await db.all(
+            'SELECT correct_index FROM quiz_questions WHERE lesson_id = ? ORDER BY id ASC',
+            [lessonId]
+        ) as { correct_index: number }[];
+
+        if (!Array.isArray(answers) || answers.length !== quizQuestions.length) {
+            return res.status(400).json({ message: 'Quiz answers are incomplete or invalid.' });
+        }
+
+        const score = quizQuestions.reduce((total, question, index) => {
+            return total + (answers[index] === question.correct_index ? 1 : 0);
+        }, 0);
+        const passThreshold = Math.max(1, Math.round(quizQuestions.length * 0.67));
+        const passed = score >= passThreshold;
+
         if (passed) {
-            const enrollment: any = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ? AND user_id = ?', [id, userId]);
-            await db.run('INSERT INTO lesson_completions (user_id, lesson_id, completed_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING', [userId, lessonId, new Date().toISOString()]);
+            const completionResult = await db.run(
+                'INSERT INTO lesson_completions (user_id, lesson_id, completed_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+                [userId, lessonId, new Date().toISOString()]
+            );
+            const isNewCompletion = getMutationCount(completionResult) > 0;
 
             const totalLessons: any = await db.get(`
                  SELECT COUNT(*) as count FROM lessons 
@@ -768,13 +918,19 @@ app.post('/api/enrollments/:id/quiz', authenticateToken, async (req: any, res) =
             const progress = Math.round(((completedLessons?.count || 0) / (totalLessons?.count || 1)) * 100);
             await db.run('UPDATE enrollments SET progress_percent = ?, status = ? WHERE enrollment_id = ?', [progress, progress >= 100 ? 'completed' : 'active', id]);
 
-            await db.run('UPDATE users SET points = points + 20 WHERE user_id = ?', [userId]);
-            await db.run('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?', [userId]);
-
-            await checkAndAwardBadges(userId);
+            if (isNewCompletion) {
+                await db.run('UPDATE users SET points = points + 20 WHERE user_id = ?', [userId]);
+                await db.run('UPDATE users SET level = 1 + CAST(points / 100 AS INTEGER) WHERE user_id = ?', [userId]);
+                await checkAndAwardBadges(userId);
+            }
         }
         const updated = await db.get('SELECT * FROM enrollments WHERE enrollment_id = ?', [id]);
-        res.json(await hydrateEnrollment(updated));
+        res.json({
+            enrollment: await hydrateEnrollment(updated),
+            passed,
+            score,
+            passThreshold
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -831,6 +987,11 @@ app.post('/api/admin/settings', authenticateToken, requireAdmin, async (req, res
     } catch (error) {
         res.status(500).json({ message: 'Architecture commit failure.' });
     }
+});
+
+// SPA catch-all route - serve index.html for all non-API routes
+app.get(/^(?!\/api\/)/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 // End of Server Definition

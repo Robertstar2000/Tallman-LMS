@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     make \
     g++ \
     sqlite3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -13,17 +14,21 @@ WORKDIR /app
 # Copy dependency manifests
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies for tsx)
+# Install ALL dependencies (including devDependencies for tsx, vite, etc)
 RUN npm install
 
 # Copy the entire project
 COPY . .
 
-# Expose the API Nexus port
-EXPOSE 3185
-
-# Ensure entrypoint is executable
+# Make entrypoint executable
 RUN chmod +x docker-entrypoint.sh
 
-# Bootstrap and start API
+# Build frontend assets for production
+RUN npm run build
+
+# Expose the unified port
+EXPOSE 3000
+
+# Bootstrap and start API with frontend
 ENTRYPOINT ["./docker-entrypoint.sh"]
+

@@ -13,7 +13,7 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
       try {
         const [c, e, u] = await Promise.all([
           TallmanAPI.getCourses(),
-          TallmanAPI.getEnrollments(),
+          TallmanAPI.adminGetEnrollments(),
           TallmanAPI.adminGetUsers()
         ]);
         setCourses(c || []);

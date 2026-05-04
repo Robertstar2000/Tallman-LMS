@@ -7,13 +7,14 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
     const [courses, setCourses] = useState<Course[]>([]);
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const navigate = useNavigate();
+    const isTeacher = user.roles.includes('Teacher' as any);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 const [coursesData, enrollmentsData] = await Promise.all([
                     TallmanAPI.getCourses(),
-                    TallmanAPI.getEnrollments()
+                    TallmanAPI.getMyEnrollments()
                 ]);
                 setCourses(coursesData);
                 setEnrollments(enrollmentsData.filter(e => e.user_id === user.user_id));
@@ -26,56 +27,98 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
 
     const handleStartCourse = async (courseId: string) => {
         try {
-            await TallmanAPI.enroll(user.user_id, courseId);
-            refreshUser();
+            if (isTeacher) {
+                await TallmanAPI.assignCourse(user.user_id, courseId);
+                refreshUser();
+            }
             navigate(`/player/${courseId}`);
         } catch (err) {
-            console.error("Enrollment failed:", err);
-            alert("Could not enroll in course. Please try again.");
+            console.error("Course launch failed:", err);
+            alert("Could not open course. Please try again.");
         }
     };
 
-    // Calculate categories
+    const handlePreviewCourse = async (courseId: string) => {
+        try {
+            await TallmanAPI.assignCourse(user.user_id, courseId);
+            refreshUser();
+            navigate(`/player/${courseId}`);
+        } catch (err) {
+            console.error("Preview enrollment failed:", err);
+            alert("Could not prepare course preview. Please try again.");
+        }
+    };
+
     const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
-
-    // Available Courses (Not enrolled)
-    const availableCatalog = courses.filter(c => !enrolledCourseIds.has(c.course_id));
-
-    // In Progress Courses
-    const inProgressEnrollments = enrollments.filter(e => e.status === 'active' && e.progress_percent < 100);
+    const readyToStartEnrollments = enrollments.filter(e => e.status === 'active' && e.progress_percent === 0);
+    const readyToStartCourses = readyToStartEnrollments.map(e => {
+        const c = courses.find(course => course.course_id === e.course_id);
+        return c ? { ...c, progress: e.progress_percent } : null;
+    }).filter(c => c !== null) as (Course & { progress: number })[];
+    const inProgressEnrollments = enrollments.filter(e => e.status === 'active' && e.progress_percent > 0 && e.progress_percent < 100);
     const inProgressCourses = inProgressEnrollments.map(e => {
         const c = courses.find(course => course.course_id === e.course_id);
         return c ? { ...c, progress: e.progress_percent } : null;
     }).filter(c => c !== null) as (Course & { progress: number })[];
-
-    // Passed Courses
     const passedEnrollments = enrollments.filter(e => e.progress_percent >= 100 || e.status === 'completed');
     const passedCourses = passedEnrollments.map(e => {
         const c = courses.find(course => course.course_id === e.course_id);
         return c ? { ...c, progress: e.progress_percent } : null;
     }).filter(c => c !== null) as (Course & { progress: number })[];
-
-    // Retry (Failed) Courses
     const failedEnrollments = enrollments.filter(e => e.status === 'dropped');
     const failedCourses = failedEnrollments.map(e => {
         const c = courses.find(course => course.course_id === e.course_id);
         return c ? { ...c, progress: e.progress_percent } : null;
     }).filter(c => c !== null) as (Course & { progress: number })[];
+    const previewCatalog = isTeacher
+        ? courses.filter(c => !enrolledCourseIds.has(c.course_id))
+        : [];
 
     return (
         <div className="space-y-10 max-w-6xl mx-auto">
             <header className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900">Student Dashboard</h1>
-                    <p className="text-slate-500">Welcome back, {user.roles.includes('Teacher' as any) ? 'Teacher' : 'Student'}. Track your classes below.</p>
+                    <p className="text-slate-500">
+                        {isTeacher
+                            ? 'Teacher preview mode. Your student progress remains separate from assigned learners.'
+                            : 'Only courses assigned to your account appear here, along with your own progress and scores.'}
+                    </p>
                 </div>
-                {user.roles.includes('Teacher' as any) && (
+                {isTeacher && (
                     <div className="flex gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <Link to="/student" className="px-6 py-2 rounded-md bg-white shadow-sm text-blue-700 font-bold text-sm transition-all">STUDENT</Link>
                         <Link to="/teacher" className="px-6 py-2 rounded-md text-slate-500 hover:text-slate-900 font-bold text-sm transition-all">TEACHER</Link>
                     </div>
                 )}
             </header>
+
+            {readyToStartCourses.length > 0 && (
+                <section>
+                    <h2 className="text-2xl font-bold mb-4">Assigned Courses</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {readyToStartCourses.map(course => (
+                            <div key={course.course_id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                                <img
+                                    src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
+                                    alt={course.course_name}
+                                    className="w-full h-48 object-cover"
+                                />
+                                <div className="p-6 flex-1 flex flex-col">
+                                    <h3 className="font-bold text-lg mb-2">{course.course_name}</h3>
+                                    <p className="text-sm text-slate-600 mb-4 flex-1 line-clamp-2">{course.short_description}</p>
+                                    <button
+                                        onClick={() => handleStartCourse(course.course_id)}
+                                        className="w-full py-2 bg-slate-900 text-white rounded-lg font-bold hover:bg-indigo-600 transition-colors"
+                                    >
+                                        Start Course
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* IN PROGRESS */}
             {inProgressCourses.length > 0 && (
@@ -146,12 +189,11 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
                 </section>
             )}
 
-            {/* ENROLL / AVAILABLE */}
-            {availableCatalog.length > 0 && (
+            {previewCatalog.length > 0 && (
                 <section>
-                    <h2 className="text-2xl font-bold mb-4">Available to Enroll</h2>
+                    <h2 className="text-2xl font-bold mb-4">Teacher Preview Catalog</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {availableCatalog.map(course => (
+                        {previewCatalog.map(course => (
                             <div key={course.course_id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                                 <img
                                     src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
@@ -162,10 +204,10 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
                                     <h3 className="font-bold text-lg mb-2">{course.course_name}</h3>
                                     <p className="text-sm text-slate-600 mb-4 flex-1 line-clamp-2">{course.short_description}</p>
                                     <button
-                                        onClick={() => handleStartCourse(course.course_id)}
+                                        onClick={() => handlePreviewCourse(course.course_id)}
                                         className="w-full py-2 bg-slate-900 text-white rounded-lg font-bold hover:bg-indigo-600 transition-colors"
                                     >
-                                        Enroll Now
+                                        Preview Course
                                     </button>
                                 </div>
                             </div>

@@ -1,15 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
 # Industrial Nexus: Synchronizing Personnel Registry
 echo "🌱 BOOTSTRAP: Synchronizing Industrial Records..."
 npm run seed
 
 if [ "$NODE_ENV" = "production" ]; then
-    echo "🏗️ BUILD: Compiling Industrial API Registry..."
-    npm run build:server
-    echo "🚀 START: Launching Tallman API Nexus (Production Mode)..."
+    echo "🚀 START: Launching Tallman Unified Server (Production Mode on Port 3000)..."
     npm start
 else
-    echo "🚀 START: Launching Tallman API Nexus (Development/Watch Mode)..."
+    echo "🚀 START: Launching Tallman Unified Server (Development Mode on Port 3000)..."
     npm run dev:backend
 fi

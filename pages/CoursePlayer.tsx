@@ -25,16 +25,20 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
       if (!courseId) return;
       setLoading(true);
       try {
-        const [sessionUser, fetchedCourse] = await Promise.all([
+        const [sessionUser, fetchedCourse, myEnrollments] = await Promise.all([
           TallmanAPI.getCurrentSession(),
-          TallmanAPI.getCourse(courseId)
+          TallmanAPI.getCourse(courseId),
+          TallmanAPI.getMyEnrollments()
         ]);
 
         if (sessionUser && fetchedCourse) {
           setUser(sessionUser);
           setCourse(fetchedCourse);
-          const enroll = await TallmanAPI.enroll(sessionUser.user_id, courseId);
-          setEnrollment(enroll);
+          let existingEnrollment = myEnrollments.find(e => e.course_id === courseId) || null;
+          if (!existingEnrollment && sessionUser.roles.includes('Teacher' as any)) {
+            existingEnrollment = await TallmanAPI.assignCourse(sessionUser.user_id, courseId);
+          }
+          setEnrollment(existingEnrollment);
         }
       } catch (err) {
         console.error("Initialization failure:", err);
@@ -75,6 +79,9 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
     , [flatLessons, activeLessonId]);
 
   const isLastLesson = activeLessonIdx !== -1 && activeLessonIdx === flatLessons.length - 1;
+  const currentQuizPassThreshold = currentLesson?.quiz_questions?.length
+    ? Math.max(1, Math.round(currentLesson.quiz_questions.length * 0.67))
+    : 0;
 
   const handleMarkComplete = async (lessonId: string) => {
     if (!enrollment) return;
@@ -104,24 +111,19 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
 
   const handleQuizSubmit = async () => {
     if (!currentLesson?.quiz_questions || !enrollment) return;
-    const score = userAnswers.reduce((acc, ans, idx) => {
-      const q = currentLesson.quiz_questions![idx];
-      // Syncing with DB schema where it's stored as 'correct_index'
-      const correctIdx = q.correct_index !== undefined ? q.correct_index : (q as any).correctIndex;
-      return ans === correctIdx ? acc + 1 : acc;
-    }, 0);
-
-    setQuizScore(score);
-    const passThreshold = 2; // Required: 2 out of 3
-    const passed = score >= passThreshold;
-
-    // Sync attempts with server for mastery calculation
-    const updated = await TallmanAPI.recordQuizAttempt(enrollment.enrollment_id, currentLesson.lesson_id, passed);
-    setEnrollment(updated);
+    const result = await TallmanAPI.recordQuizAttempt(
+      enrollment.enrollment_id,
+      currentLesson.lesson_id,
+      userAnswers
+    );
+    setQuizScore(result.score);
+    setEnrollment(result.enrollment);
     refreshUser();
 
-    if (!passed) {
+    if (!result.passed) {
       setFailedAttempt(true);
+    } else {
+      setFailedAttempt(false);
     }
   };
 
@@ -196,6 +198,11 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
   if (!course || !enrollment) return (
     <div className="h-full flex flex-col items-center justify-center p-20 text-center">
       <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tighter italic">Invalid Path</h2>
+      <p className="text-slate-500 mb-6 max-w-md">
+        {user?.roles.includes('Teacher' as any)
+          ? 'This course preview could not be initialized.'
+          : 'This course is not assigned to your account, or your session no longer has access to it.'}
+      </p>
       <button onClick={() => navigate('/')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black">Return Home</button>
     </div>
   );
@@ -272,7 +279,9 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                     {failedAttempt && (
                       <div className="p-8 bg-rose-50 border-2 border-rose-100 rounded-[2.5rem] mb-8 text-center animate-in shake">
                         <h3 className="text-xl font-black text-rose-600 uppercase italic">Technical Audit Failed</h3>
-                        <p className="text-rose-500 font-bold mt-2">Score: {quizScore}/3. Required: 2/3. Return to manual to re-verify technical data.</p>
+                        <p className="text-rose-500 font-bold mt-2">
+                          Score: {quizScore}/{currentLesson.quiz_questions?.length || 0}. Required: {currentQuizPassThreshold}/{currentLesson.quiz_questions?.length || 0}. Return to manual to re-verify technical data.
+                        </p>
                         <button onClick={() => {
                           const doc = flatLessons[activeLessonIdx - 1];
                           if (doc) setActiveLessonId(doc.lesson_id);
@@ -323,7 +332,9 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                     ) : (
                       <div className="p-16 text-center bg-white rounded-[4rem] border-4 border-indigo-100 shadow-2xl">
                         <div className="text-6xl mb-6">✅</div>
-                        <h2 className="text-4xl font-black text-slate-900 mb-8 uppercase italic">Audit Passed: {quizScore}/3</h2>
+                        <h2 className="text-4xl font-black text-slate-900 mb-8 uppercase italic">
+                          Audit Passed: {quizScore}/{currentLesson.quiz_questions?.length || 0}
+                        </h2>
                         <button onClick={handleProceed} className="w-full py-6 bg-indigo-600 text-white rounded-3xl font-black text-xl">Continue Sequence</button>
                       </div>
                     )}

@@ -19,7 +19,7 @@ const WorkforceRegistry: React.FC = () => {
             const [userData, courseData, enrollData] = await Promise.all([
                 TallmanAPI.adminGetUsers(),
                 TallmanAPI.getCourses(),
-                TallmanAPI.getEnrollments()
+                TallmanAPI.adminGetEnrollments()
             ]);
             setUsers(userData);
             setCourses(courseData);
@@ -48,7 +48,7 @@ const WorkforceRegistry: React.FC = () => {
 
     const handleAssignCourse = async (userId: string, courseId: string) => {
         try {
-            await TallmanAPI.enroll(userId, courseId);
+            await TallmanAPI.assignCourse(userId, courseId);
             alert("Course assigned.");
             setSelectedUserId(null);
             loadData();

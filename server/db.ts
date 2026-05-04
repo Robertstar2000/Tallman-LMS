@@ -68,7 +68,7 @@ if (isPostgres) {
   };
 } else {
   console.log("🛠️ PERSISTENCE: Initializing Local SQLite Engine (Developer Mode)");
-  const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../tallman.db');
+  const dbPath = process.env.DB_PATH || path.resolve(process.cwd(), 'tallman.db');
   console.log(`[Database] Connecting to SQLite at ${dbPath}`);
   try {
     sqlite = new Database(dbPath);

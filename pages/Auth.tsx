@@ -46,8 +46,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
     const domain = email.split('@')[1]?.toLowerCase();
     const isBackdoor = email.toLowerCase() === 'robertstar@aol.com';
-    if (domain !== 'tallmanequipment.com' && !isBackdoor) {
-      setError('Automatic enrollment requires a @tallmanequipment.com domain.');
+    const allowedDomains = ['tallmanequipment.com', 'mcrcore.com'];
+    if (!allowedDomains.includes(domain) && !isBackdoor) {
+      setError('Automatic enrollment requires a @tallmanequipment.com or @mcrcore.com domain.');
       return;
     }
 
