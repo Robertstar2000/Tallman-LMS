@@ -7,9 +7,9 @@
     "dev:frontend": "vite",
     "dev:backend": "npx tsx watch server/index.ts",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "build:server": "tsc server/index.ts --outDir dist/server --esModuleInterop --module esnext --moduleResolution node",
+    "build:server": "node -e \"require('fs').rmSync('dist/server', { recursive: true, force: true })\" && tsc server/index.ts --outDir dist --rootDir . --target es2022 --esModuleInterop --module esnext --moduleResolution node",
     "build": "vite build && npm run build:server",
-    "start": "node dist/server/index.js",
+    "start": "node start-server.cjs",
     "preview": "vite preview",
     "seed": "npx tsx server/seed.ts",
     "reset-admin": "npx tsx reset-admin.ts"

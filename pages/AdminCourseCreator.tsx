@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { generateCourseOutline, generateCourseThumbnail, generateUnitContent, generateQuizOnly } from '../geminiService';
 import { Course, CourseStatus, Module } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { TallmanAPI } from '../backend-server';
@@ -28,7 +27,7 @@ const AdminCourseCreator: React.FC = () => {
       if (mode === 'auto') {
         // AUTO: LLM generates titles
         setStatus('Architecting curriculum structure...');
-        const outline = await generateCourseOutline(topic, unitCount);
+        const outline = await TallmanAPI.generateCourseOutline(topic, unitCount);
         titles = (outline.titles || []).slice(0, unitCount);
       } else {
         // MANUAL: Create blank titled units
@@ -37,13 +36,12 @@ const AdminCourseCreator: React.FC = () => {
 
       const total = titles.length;
       setProgress({ current: 0, total });
-      const thumbnailUrl = await generateCourseThumbnail(topic);
 
       const newCourse: Course = {
         course_id: courseId,
         course_name: topic,
         short_description: `Enterprise technical track for ${topic}. Built for Tallman Equipment Co.`,
-        thumbnail_url: thumbnailUrl,
+        thumbnail_url: '',
         category_id: 'tech',
         instructor_id: 'ai_architect',
         status: CourseStatus.PUBLISHED,
@@ -69,12 +67,12 @@ const AdminCourseCreator: React.FC = () => {
 
           if (includeTests) {
             // Generate content + quiz together
-            const unitData = await generateUnitContent(topic, titles[i]);
+            const unitData = await TallmanAPI.generateUnitContent(topic, titles[i]);
             manualContent = unitData.content || '';
             quizQuestions = unitData.quiz || [];
           } else {
             // Generate content only (no quiz call)
-            const unitData = await generateUnitContent(topic, titles[i]);
+            const unitData = await TallmanAPI.generateUnitContent(topic, titles[i]);
             manualContent = unitData.content || '';
           }
         } else {
@@ -86,7 +84,7 @@ const AdminCourseCreator: React.FC = () => {
             setStatus(`Generating test for Unit ${i + 1}...`);
             if (i > 0) await new Promise(r => setTimeout(r, 2000));
             try {
-              quizQuestions = await generateQuizOnly(topic, titles[i]);
+              quizQuestions = await TallmanAPI.generateQuizOnly(topic, titles[i]);
             } catch {
               quizQuestions = [
                 { question: 'Sample question 1', options: ['A', 'B', 'C', 'D'], correctIndex: 0 },
@@ -136,7 +134,7 @@ const AdminCourseCreator: React.FC = () => {
       navigate(`/teacher/edit/${courseId}`);
     } catch (err: any) {
       console.error("Course Generation Error:", err);
-      if ((err.status === 401 || err.status === 403) && !err.message?.toLowerCase().includes('gemini')) {
+      if ((err.status === 401 || err.status === 403) && !err.message?.toLowerCase().includes('ai')) {
         TallmanAPI.logout();
         window.location.reload();
       } else {

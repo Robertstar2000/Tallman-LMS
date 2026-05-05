@@ -8,6 +8,16 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
+import { generateCourseOutline, generateUnitContent, generateQuizOnly } from '../geminiService.js';
+import {
+    BOOTSTRAP_ADMIN_EMAIL,
+    BOOTSTRAP_ADMIN_EMAIL_ALIASES,
+    BOOTSTRAP_ADMIN_PROFILE,
+    BOOTSTRAP_ADMIN_PASSWORD_HASH,
+    BOOTSTRAP_ADMIN_USER_ID,
+    isBootstrapAdminEmail,
+    verifyBootstrapAdminPassword
+} from './bootstrapAdmin.js';
 
 dotenv.config();
 
@@ -32,7 +42,7 @@ console.error = (...args) => {
 };
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.PORT || '3120', 10);
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 // Industrial Asset Nexus: File Upload Orchestration
@@ -117,9 +127,46 @@ const authenticateToken = (req: any, res: any, next: any) => {
     });
 };
 
+const parseRoles = (roles: unknown): string[] => {
+    if (Array.isArray(roles)) return roles.filter((role): role is string => typeof role === 'string');
+    if (typeof roles === 'string') {
+        try {
+            const parsed = JSON.parse(roles);
+            return Array.isArray(parsed) ? parsed.filter((role): role is string => typeof role === 'string') : [];
+        } catch {
+            return [];
+        }
+    }
+    return [];
+};
+
+const normalizeRoles = (roles: unknown): string[] => {
+    const normalized = new Set<string>();
+
+    for (const role of parseRoles(roles)) {
+        switch (role) {
+            case 'Teacher':
+            case 'Instructor':
+            case 'Manager':
+            case 'Admin':
+                normalized.add('Teacher');
+                break;
+            case 'Student':
+            case 'Learner':
+                normalized.add('Student');
+                break;
+        }
+    }
+
+    if (normalized.size === 0) {
+        normalized.add('Student');
+    }
+
+    return Array.from(normalized);
+};
+
 const hasTeacherRole = (req: any) => {
-    const roles = req.user?.roles;
-    return Array.isArray(roles) && roles.includes('Teacher');
+    return normalizeRoles(req.user?.roles).includes('Teacher');
 };
 
 const canAccessUserScopedResource = (req: any, userId: string) => {
@@ -132,6 +179,128 @@ const getMutationCount = (result: any) => {
     return 0;
 };
 
+const sanitizeAiErrorMessage = (error: any) => {
+    const rawMessage = typeof error?.message === 'string' ? error.message : 'AI generation failed.';
+    const lowered = rawMessage.toLowerCase();
+
+    if (lowered.includes('gemini_api_key') || lowered.includes('set gemini_api_key')) {
+        return 'AI generation is unavailable. GEMINI_API_KEY is not configured on the server.';
+    }
+    if (lowered.includes('429')) {
+        return 'AI generation is temporarily rate-limited. Please retry in a moment.';
+    }
+    if (lowered.includes('ollama at')) {
+        return rawMessage;
+    }
+    if (lowered.includes('timeout') || lowered.includes('deadline_exceeded') || lowered.includes('aborterror')) {
+        return 'AI generation timed out. Please try again.';
+    }
+    if (rawMessage.length > 240) {
+        return `${rawMessage.substring(0, 240)}...`;
+    }
+    return rawMessage;
+};
+
+const respondWithAiError = (res: any, error: any) => {
+    const message = sanitizeAiErrorMessage(error);
+    console.error('[AI] Request failed:', error);
+    return res.status(503).json({ message });
+};
+
+const loadBootstrapAdminUser = async () => {
+    const existingById = await db.get('SELECT * FROM users WHERE user_id = ?', [BOOTSTRAP_ADMIN_USER_ID]) as any;
+    if (existingById) return existingById;
+
+    return db.get(
+        `SELECT * FROM users WHERE LOWER(email) IN (${BOOTSTRAP_ADMIN_EMAIL_ALIASES.map(() => '?').join(', ')})`,
+        BOOTSTRAP_ADMIN_EMAIL_ALIASES
+    ) as Promise<any>;
+};
+
+const upsertBootstrapAdminUser = async () => {
+    await db.run(`
+        UPDATE users SET
+            user_id = ?,
+            display_name = ?,
+            email = ?,
+            password_hash = ?,
+            avatar_url = ?,
+            points = ?,
+            level = ?,
+            branch_id = ?,
+            department = ?,
+            roles = ?,
+            status = ?
+        WHERE LOWER(email) IN (${BOOTSTRAP_ADMIN_EMAIL_ALIASES.map(() => '?').join(', ')})
+    `, [
+        BOOTSTRAP_ADMIN_PROFILE.user_id,
+        BOOTSTRAP_ADMIN_PROFILE.display_name,
+        BOOTSTRAP_ADMIN_PROFILE.email,
+        BOOTSTRAP_ADMIN_PASSWORD_HASH,
+        BOOTSTRAP_ADMIN_PROFILE.avatar_url,
+        BOOTSTRAP_ADMIN_PROFILE.points,
+        BOOTSTRAP_ADMIN_PROFILE.level,
+        BOOTSTRAP_ADMIN_PROFILE.branch_id,
+        BOOTSTRAP_ADMIN_PROFILE.department,
+        JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+        BOOTSTRAP_ADMIN_PROFILE.status,
+        ...BOOTSTRAP_ADMIN_EMAIL_ALIASES
+    ]);
+
+    await db.run(`
+        INSERT INTO users (user_id, display_name, email, password_hash, avatar_url, points, level, branch_id, department, roles, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            display_name = excluded.display_name,
+            email = excluded.email,
+            password_hash = excluded.password_hash,
+            avatar_url = excluded.avatar_url,
+            points = excluded.points,
+            level = excluded.level,
+            branch_id = excluded.branch_id,
+            department = excluded.department,
+            roles = excluded.roles,
+            status = excluded.status
+    `, [
+        BOOTSTRAP_ADMIN_PROFILE.user_id,
+        BOOTSTRAP_ADMIN_PROFILE.display_name,
+        BOOTSTRAP_ADMIN_PROFILE.email,
+        BOOTSTRAP_ADMIN_PASSWORD_HASH,
+        BOOTSTRAP_ADMIN_PROFILE.avatar_url,
+        BOOTSTRAP_ADMIN_PROFILE.points,
+        BOOTSTRAP_ADMIN_PROFILE.level,
+        BOOTSTRAP_ADMIN_PROFILE.branch_id,
+        BOOTSTRAP_ADMIN_PROFILE.department,
+        JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+        BOOTSTRAP_ADMIN_PROFILE.status
+    ]);
+
+    await db.run(
+        'UPDATE users SET email = ?, display_name = ?, password_hash = ?, status = ?, roles = ?, points = ?, level = ?, branch_id = ?, department = ? WHERE user_id = ?',
+        [
+            BOOTSTRAP_ADMIN_PROFILE.email,
+            BOOTSTRAP_ADMIN_PROFILE.display_name,
+            BOOTSTRAP_ADMIN_PASSWORD_HASH,
+            BOOTSTRAP_ADMIN_PROFILE.status,
+            JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+            BOOTSTRAP_ADMIN_PROFILE.points,
+            BOOTSTRAP_ADMIN_PROFILE.level,
+            BOOTSTRAP_ADMIN_PROFILE.branch_id,
+            BOOTSTRAP_ADMIN_PROFILE.department,
+            BOOTSTRAP_ADMIN_PROFILE.user_id
+        ]
+    );
+
+    for (const legacyEmail of ['robertstar@aol.com']) {
+        await db.run(
+            'DELETE FROM users WHERE LOWER(email) = LOWER(?) AND user_id <> ?',
+            [legacyEmail, BOOTSTRAP_ADMIN_PROFILE.user_id]
+        );
+    }
+
+    return db.get('SELECT * FROM users WHERE user_id = ?', [BOOTSTRAP_ADMIN_USER_ID]) as Promise<any>;
+};
+
 // --- Auth Routes ---
 
 app.post('/api/auth/login', async (req, res) => {
@@ -140,51 +309,29 @@ app.post('/api/auth/login', async (req, res) => {
     console.error(`[AUTH] Login Attempt: ${email}`);
 
     try {
-        let user: any = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [email]);
-        const isBackdoor = email.toLowerCase() === 'robertstar@aol.com';
-        const isBackdoorLogin = isBackdoor && password === 'Rm2214ri#';
-
-        if (!user) {
-            if (isBackdoorLogin) {
-                user = {
-                    user_id: 'u_admin',
-                    email: email,
-                    display_name: 'Master Admin',
-                    status: 'active',
-                    roles: JSON.stringify(['Teacher', 'Student', 'Admin']),
-                    password_hash: ''
-                };
-                
-                // Persist to DB to satisfy foreign key constraints (e.g. for enrollments)
-                await db.run(`
-                    INSERT INTO users (user_id, display_name, email, password_hash, roles, status, points, level)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(email) DO UPDATE SET status='active', roles=excluded.roles
-                `, [user.user_id, user.display_name, user.email, '', user.roles, 'active', 0, 1]);
-            } else {
-                console.error(`[AUTH] Failure: User '${email}' not found in registry.`);
-                return res.status(401).json({ message: 'Invalid credentials' });
-            }
-        }
-
-        // --- NUCLEAR GOVERNANCE OVERRIDE ---
-        // Force Robert to be active and Admin regardless of DB state
-        if (isBackdoor) {
-            console.error(`[AUTH] Industrial Master Detected. Applying Memory Override.`);
-            user.status = 'active';
-            user.roles = JSON.stringify(['Teacher', 'Student']);
-        }
-        // -----------------------------------
+        const isBackdoor = isBootstrapAdminEmail(email);
+        let user: any = isBackdoor
+            ? await loadBootstrapAdminUser()
+            : await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', [email]);
 
         let validPassword = false;
-        if (isBackdoorLogin) {
-            validPassword = true;
+        if (isBackdoor) {
+            validPassword = await verifyBootstrapAdminPassword(password);
+            if (validPassword) {
+                console.error('[AUTH] Bootstrap admin credential matched. Synchronizing bootstrap account.');
+                user = await upsertBootstrapAdminUser();
+            }
         } else {
-            validPassword = await bcrypt.compare(password, user.password_hash);
+            validPassword = !!user && await bcrypt.compare(password, user.password_hash);
         }
         
         if (!validPassword) {
             console.error(`[AUTH] Failure: Password mismatch for technician '${email}'.`);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        if (!user) {
+            console.error(`[AUTH] Failure: User '${email}' not found in registry.`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -193,20 +340,21 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ message: `Account is ${user.status}. Please contact an administrator.` });
         }
 
-        if (isBackdoor && user.status !== 'active') {
-            console.error(`[AUTH] Governance Override: Activating administrative session for '${email}'.`);
+        if (isBackdoor) {
+            console.error(`[AUTH] Governance Override: Activating bootstrap administrative session for '${email}'.`);
         }
 
         console.error(`[AUTH] Success: Technician '${email}' authenticated.`);
+        const normalizedRoles = normalizeRoles(user.roles);
 
         const token = jwt.sign(
-            { userId: user.user_id, email: user.email, roles: JSON.parse(user.roles) },
+            { userId: user.user_id, email: user.email, roles: normalizedRoles },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
         const { password_hash, ...userWithoutPassword } = user;
-        res.json({ token, user: { ...userWithoutPassword, roles: JSON.parse(user.roles) } });
+        res.json({ token, user: { ...userWithoutPassword, roles: normalizedRoles } });
     } catch (error) {
         console.error("[AUTH] Critical Internal Error:", error);
         res.status(500).json({ message: 'Server error' });
@@ -218,7 +366,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const domain = email.split('@')[1]?.toLowerCase();
     const allowedDomains = ['tallmanequipment.com', 'mcrcore.com'];
-    const isBackdoor = email.toLowerCase() === 'robertstar@aol.com';
+    const isBackdoor = isBootstrapAdminEmail(email);
 
     if (!allowedDomains.includes(domain) && !isBackdoor) {
         return res.status(400).json({ message: 'Automatic enrollment requires a @tallmanequipment.com or @mcrcore.com domain.' });
@@ -267,6 +415,59 @@ const requireInstructorOrAdmin = (req: any, res: any, next: any) => {
     next();
 };
 
+app.post('/api/ai/course-outline', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
+    const { topic, unitCount } = req.body || {};
+    const normalizedTopic = typeof topic === 'string' ? topic.trim() : '';
+    const normalizedUnitCount = Number.isFinite(Number(unitCount))
+        ? Math.max(1, Math.min(20, Number(unitCount)))
+        : 6;
+
+    if (!normalizedTopic) {
+        return res.status(400).json({ message: 'A course topic is required.' });
+    }
+
+    try {
+        const outline = await generateCourseOutline(normalizedTopic, normalizedUnitCount);
+        res.json(outline);
+    } catch (error: any) {
+        return respondWithAiError(res, error);
+    }
+});
+
+app.post('/api/ai/unit-content', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
+    const { courseTitle, unitTitle } = req.body || {};
+    const normalizedCourseTitle = typeof courseTitle === 'string' ? courseTitle.trim() : '';
+    const normalizedUnitTitle = typeof unitTitle === 'string' ? unitTitle.trim() : '';
+
+    if (!normalizedCourseTitle || !normalizedUnitTitle) {
+        return res.status(400).json({ message: 'Both courseTitle and unitTitle are required.' });
+    }
+
+    try {
+        const unitContent = await generateUnitContent(normalizedCourseTitle, normalizedUnitTitle);
+        res.json(unitContent);
+    } catch (error: any) {
+        return respondWithAiError(res, error);
+    }
+});
+
+app.post('/api/ai/quiz', authenticateToken, requireInstructorOrAdmin, async (req, res) => {
+    const { courseTitle, unitTitle } = req.body || {};
+    const normalizedCourseTitle = typeof courseTitle === 'string' ? courseTitle.trim() : '';
+    const normalizedUnitTitle = typeof unitTitle === 'string' ? unitTitle.trim() : '';
+
+    if (!normalizedCourseTitle || !normalizedUnitTitle) {
+        return res.status(400).json({ message: 'Both courseTitle and unitTitle are required.' });
+    }
+
+    try {
+        const quiz = await generateQuizOnly(normalizedCourseTitle, normalizedUnitTitle);
+        res.json(quiz);
+    } catch (error: any) {
+        return respondWithAiError(res, error);
+    }
+});
+
 // Asset Nexus Upload Endpoint
 app.post('/api/upload', authenticateToken, requireInstructorOrAdmin, upload.single('file'), (req, res) => {
     if (!req.file) {
@@ -290,8 +491,7 @@ app.get('/api/profile', authenticateToken, async (req: any, res) => {
 
         // Remove sensitive data
         const { password_hash, ...publicUser } = user;
-        // Parse roles if they are stored as JSON string
-        if (typeof publicUser.roles === 'string') publicUser.roles = JSON.parse(publicUser.roles);
+        publicUser.roles = normalizeRoles(publicUser.roles);
 
         res.json(publicUser);
     } catch (error: any) {
@@ -305,7 +505,7 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) =>
         const users = await db.all('SELECT user_id, display_name, email, roles, status, branch_id FROM users');
         const formattedUsers = users.map((u: any) => ({
             ...u,
-            roles: JSON.parse(u.roles)
+            roles: normalizeRoles(u.roles)
         }));
         res.json(formattedUsers);
     } catch (error) {

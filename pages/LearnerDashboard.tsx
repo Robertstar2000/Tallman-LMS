@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Course, Enrollment } from '../types';
 import { TallmanAPI } from '../backend-server';
+import { getCourseBriefLabel, getCourseSummary, getCourseSupportText } from '../coursePresentation';
 
 const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ user: initialUser, refreshUser }) => {
   const navigate = useNavigate();
@@ -75,7 +76,6 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
     try {
       await TallmanAPI.enroll(initialUser.user_id, courseId);
       await refreshUser();
-      // Data will refresh via the interval or we can force it
       window.location.reload();
     } catch (err) {
       alert("Registration failure. Check network integrity.");
@@ -110,7 +110,6 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
         </div>
       </header>
 
-      {/* Active Tracks */}
       <section className="relative">
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-baseline gap-4">
@@ -126,14 +125,8 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
               to={`/player/${course.course_id}`}
               className="group relative flex-none w-[380px] h-[600px] bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-[0_48px_80px_-20px_rgba(0,0,0,0.15)] hover:-translate-y-4 transition-all duration-700 snap-start"
             >
-              <div className="absolute inset-0">
-                <img
-                  src={course.thumbnail_url}
-                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-all duration-[2s] ease-out"
-                  alt=""
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.35),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.22),transparent_30%)]"></div>
 
               <div className="absolute top-8 left-8">
                 <div className="px-5 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full font-black text-white text-[10px] uppercase tracking-widest">
@@ -143,8 +136,12 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
 
               <div className="absolute bottom-0 left-0 right-0 p-10 space-y-6">
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Industrial Path</p>
+                  <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">{getCourseBriefLabel(course)}</p>
                   <h3 className="text-3xl font-black text-white leading-none tracking-tighter italic">{course.course_name}</h3>
+                </div>
+                <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 backdrop-blur-md">
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">Course Brief</p>
+                  <p className="text-sm text-slate-100 leading-relaxed">{getCourseSummary(course)}</p>
                 </div>
 
                 <div className="pt-4 space-y-4">
@@ -172,7 +169,6 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
         </div>
       </section>
 
-      {/* Available for Initialization */}
       <section className="space-y-8">
         <div className="flex items-baseline gap-4 px-2">
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">Registry Library</h2>
@@ -181,14 +177,22 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
           {availableCatalog.map((course, index) => (
-            <div key={`${course.course_id}-catalog-${index}`} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-[300px]">
+            <div key={`${course.course_id}-catalog-${index}`} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-[360px]">
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
-                  <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest">{course.difficulty}</span>
-                  <span className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl">⚙️</span>
+                  <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-widest">{getCourseBriefLabel(course)}</span>
+                  <span className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 6v12m6-6H6" />
+                    </svg>
+                  </span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase">{course.course_name}</h3>
-                <p className="text-slate-500 text-xs font-medium line-clamp-2">{course.short_description}</p>
+                <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Course Brief</p>
+                  <p className="text-slate-600 text-sm font-medium leading-relaxed">{getCourseSummary(course)}</p>
+                </div>
+                <p className="text-slate-500 text-xs font-medium">{getCourseSupportText(course)}</p>
               </div>
               <button
                 onClick={() => handleStartCourse(course.course_id)}
@@ -201,7 +205,6 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
         </div>
       </section>
 
-      {/* Accomplishment Records */}
       {completedCourses.length > 0 && (
         <section className="space-y-8">
           <div className="flex items-baseline gap-4 px-2">
@@ -212,7 +215,11 @@ const LearnerDashboard: React.FC<{ user: User; refreshUser: () => void }> = ({ u
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
             {completedCourses.map((course, index) => (
               <div key={`${course.course_id}-completed-${index}`} className="bg-slate-50 p-8 rounded-[3rem] border border-slate-200 flex items-center gap-6 opacity-60 hover:opacity-100 transition-opacity">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🏆</div>
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
                 <div>
                   <h4 className="font-black text-slate-900 italic uppercase">{course.course_name}</h4>
                   <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Mastery Achieved</p>

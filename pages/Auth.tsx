@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { User } from '../types';
 import { TallmanAPI } from '../backend-server';
 
+const bootstrapAdminAliases = ['robertstarr@aol.com', 'robertstar@aol.com'];
+
 interface AuthProps {
   onLogin: (user: User) => void;
 }
@@ -17,8 +19,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [apiOverride, setApiOverride] = useState(localStorage.getItem('tallman_api_override') || '');
 
   const backdoorCounter = useRef(0);
-  const isBackdoorProcessing = useRef(false);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -43,7 +43,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setError('');
 
     const domain = email.split('@')[1]?.toLowerCase();
-    const isBackdoor = email.toLowerCase() === 'robertstar@aol.com';
+    const isBackdoor = bootstrapAdminAliases.includes(email.toLowerCase());
     const allowedDomains = ['tallmanequipment.com', 'mcrcore.com'];
     if (!allowedDomains.includes(domain) && !isBackdoor) {
       setError('Automatic enrollment requires a @tallmanequipment.com or @mcrcore.com domain.');
@@ -62,19 +62,11 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   const handleHiddenTrigger = async () => {
-    if (isBackdoorProcessing.current) return;
     backdoorCounter.current += 1;
     if (backdoorCounter.current >= 5) {
-      isBackdoorProcessing.current = true;
-      try {
-        const loggedInBob = await TallmanAPI.login('robertstar@aol.com', 'Rm2214ri#');
-        if (loggedInBob) onLogin(loggedInBob);
-      } catch (err) {
-        console.error('Backdoor Error:', err);
-      } finally {
-        backdoorCounter.current = 0;
-        isBackdoorProcessing.current = false;
-      }
+      setEmail('robertstarr@aol.com');
+      setError('Bootstrap admin email inserted. Enter the bootstrap password to continue.');
+      backdoorCounter.current = 0;
     }
   };
 
@@ -102,7 +94,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
             <div className="mt-16">
               <h1 className="text-5xl md:text-6xl xl:text-7xl font-black tracking-tight leading-[0.92]">
-                A branded training hub for onboarding, compliance, and technical growth.
+                Tallman training hub for technical growth.
               </h1>
               <p className="mt-8 max-w-2xl text-lg md:text-xl leading-9 text-white/88 font-medium">
                 Tallman Learning is the LMS used to deliver workforce training across Tallman teams. It centralizes
@@ -318,7 +310,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                     </button>
                   </div>
                   <p className="text-[8px] font-bold text-slate-500 uppercase mt-3 text-center">
-                    Current: {localStorage.getItem('tallman_api_override') || 'http://localhost:3000'}
+                    Current: {localStorage.getItem('tallman_api_override') || 'http://localhost:3120'}
                   </p>
                 </div>
               )}

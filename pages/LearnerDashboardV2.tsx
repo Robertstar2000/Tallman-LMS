@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Course, User, Enrollment } from '../types';
 import { TallmanAPI } from '../backend-server';
 import { Link, useNavigate } from 'react-router-dom';
+import { getCourseBriefLabel, getCourseSummary, getCourseSupportText } from '../coursePresentation';
 
 const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({ user, refreshUser }) => {
     const [courses, setCourses] = useState<Course[]>([]);
@@ -99,14 +100,21 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {readyToStartCourses.map(course => (
                             <div key={course.course_id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                                <img
-                                    src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
-                                    alt={course.course_name}
-                                    className="w-full h-48 object-cover"
-                                />
+                                <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 text-white space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black uppercase tracking-widest">
+                                            {getCourseBriefLabel(course)}
+                                        </span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">Assigned</span>
+                                    </div>
+                                    <h3 className="font-bold text-xl leading-tight">{course.course_name}</h3>
+                                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-2">Course Brief</p>
+                                        <p className="text-sm text-slate-100 leading-relaxed">{getCourseSummary(course)}</p>
+                                    </div>
+                                </div>
                                 <div className="p-6 flex-1 flex flex-col">
-                                    <h3 className="font-bold text-lg mb-2">{course.course_name}</h3>
-                                    <p className="text-sm text-slate-600 mb-4 flex-1 line-clamp-2">{course.short_description}</p>
+                                    <p className="text-sm text-slate-600 mb-4 flex-1">{getCourseSupportText(course)}</p>
                                     <button
                                         onClick={() => handleStartCourse(course.course_id)}
                                         className="w-full py-2 bg-slate-900 text-white rounded-lg font-bold hover:bg-indigo-600 transition-colors"
@@ -131,13 +139,20 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
                                 to={`/player/${course.course_id}`}
                                 className="block bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden hover:shadow-md transition-shadow"
                             >
-                                <img
-                                    src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
-                                    alt={course.course_name}
-                                    className="w-full h-48 object-cover"
-                                />
+                                <div className="p-6 bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 text-white space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black uppercase tracking-widest">
+                                            {getCourseBriefLabel(course)}
+                                        </span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">In Progress</span>
+                                    </div>
+                                    <h3 className="font-bold text-xl leading-tight">{course.course_name}</h3>
+                                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-2">Course Brief</p>
+                                        <p className="text-sm text-slate-100 leading-relaxed">{getCourseSummary(course)}</p>
+                                    </div>
+                                </div>
                                 <div className="p-6">
-                                    <h3 className="font-bold text-lg mb-2 text-blue-900">{course.course_name}</h3>
                                     <div className="w-full bg-slate-100 h-2 rounded-full mb-2">
                                         <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${course.progress}%` }}></div>
                                     </div>
@@ -195,14 +210,21 @@ const LearnerDashboardV2: React.FC<{ user: User, refreshUser: () => void }> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {previewCatalog.map(course => (
                             <div key={course.course_id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                                <img
-                                    src={course.thumbnail_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600&auto=format&fit=crop'}
-                                    alt={course.course_name}
-                                    className="w-full h-48 object-cover"
-                                />
+                                <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black uppercase tracking-widest">
+                                            {getCourseBriefLabel(course)}
+                                        </span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">Preview</span>
+                                    </div>
+                                    <h3 className="font-bold text-xl leading-tight">{course.course_name}</h3>
+                                    <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-2">Course Brief</p>
+                                        <p className="text-sm text-slate-100 leading-relaxed">{getCourseSummary(course)}</p>
+                                    </div>
+                                </div>
                                 <div className="p-6 flex-1 flex flex-col">
-                                    <h3 className="font-bold text-lg mb-2">{course.course_name}</h3>
-                                    <p className="text-sm text-slate-600 mb-4 flex-1 line-clamp-2">{course.short_description}</p>
+                                    <p className="text-sm text-slate-600 mb-4 flex-1">{getCourseSupportText(course)}</p>
                                     <button
                                         onClick={() => handlePreviewCourse(course.course_id)}
                                         className="w-full py-2 bg-slate-900 text-white rounded-lg font-bold hover:bg-indigo-600 transition-colors"

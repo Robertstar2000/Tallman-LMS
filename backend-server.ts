@@ -121,6 +121,27 @@ class TallmanAPIClient {
     }
   }
 
+  async generateCourseOutline(topic: string, unitCount: number): Promise<{ titles: string[]; descriptions?: string[] }> {
+    return this.fetchAPI('/ai/course-outline', {
+      method: 'POST',
+      body: JSON.stringify({ topic, unitCount })
+    });
+  }
+
+  async generateUnitContent(courseTitle: string, unitTitle: string): Promise<{ content: string; quiz: any[] }> {
+    return this.fetchAPI('/ai/unit-content', {
+      method: 'POST',
+      body: JSON.stringify({ courseTitle, unitTitle })
+    });
+  }
+
+  async generateQuizOnly(courseTitle: string, unitTitle: string): Promise<any[]> {
+    return this.fetchAPI('/ai/quiz', {
+      method: 'POST',
+      body: JSON.stringify({ courseTitle, unitTitle })
+    });
+  }
+
   async getMyEnrollments(): Promise<Enrollment[]> {
     return this.fetchAPI('/enrollments');
   }

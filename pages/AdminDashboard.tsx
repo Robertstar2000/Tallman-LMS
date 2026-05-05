@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course, User, Enrollment } from '../types';
 import { TallmanAPI } from '../backend-server';
-import { generateCourseThumbnail } from '../courseThumbnails';
+import { getCourseSummary } from '../coursePresentation';
 
 const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -78,20 +78,21 @@ const AdminDashboard: React.FC<{ user: User }> = ({ user }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {courses.map(course => (
+              {courses.map((course, index) => (
                 <tr key={course.course_id} className="hover:bg-slate-50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={course.thumbnail_url || generateCourseThumbnail(course.course_name)}
-                        alt={course.course_name}
-                        className="w-16 h-12 object-cover rounded"
-                        onError={(e) => {
-                          e.currentTarget.src = generateCourseThumbnail(course.course_name);
-                        }}
-                      />
+                    <div className="flex items-start gap-4">
+                      <div className="relative w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                        <svg className="w-6 h-6 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6.75A2.75 2.75 0 016.75 4h10.5A2.75 2.75 0 0120 6.75v10.5A2.75 2.75 0 0117.25 20H6.75A2.75 2.75 0 014 17.25V6.75zm4.5.75h7m-7 4h7m-7 4h4.5" />
+                        </svg>
+                        <span className="absolute -right-1.5 -bottom-1.5 w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-black flex items-center justify-center border-2 border-white">
+                          {index + 1}
+                        </span>
+                      </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-lg">{course.course_name}</span>
+                        <p className="text-sm text-slate-500 max-w-2xl">{getCourseSummary(course)}</p>
                         {course.attachment_url && (
                           <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1">
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>

@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 import { TallmanAPI } from '../backend-server';
+import { getCourseBriefLabel, getCourseSummary, getCourseSupportText } from '../coursePresentation';
 
 const CourseCatalog: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,8 +32,7 @@ const CourseCatalog: React.FC = () => {
 
   const featuredCourse = useMemo(() => {
     if (allCourses.length === 0) return null;
-    // Prioritize high-rated, published tracks
-    return allCourses.find(c => c.rating >= 4.9 && c.thumbnail_url.startsWith('data:')) || allCourses[0];
+    return allCourses.find(c => c.rating >= 4.9) || allCourses[0];
   }, [allCourses]);
 
   const filteredCourses = useMemo(() => {
@@ -55,24 +54,21 @@ const CourseCatalog: React.FC = () => {
         </div>
       </header>
 
-      {/* FEATURED HERO - The "Larger Image" section */}
       {!loading && featuredCourse && (
-        <section className="relative group overflow-hidden rounded-[4rem] shadow-2xl border-4 border-white">
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent"></div>
-          <img
-            src={featuredCourse.thumbnail_url}
-            className="w-full h-[600px] object-cover transition-transform duration-[20s] group-hover:scale-110 ease-out"
-            alt={featuredCourse.course_name}
-          />
-          <div className="absolute bottom-0 left-0 z-20 p-12 md:p-20 space-y-6 max-w-4xl">
+        <section className="relative overflow-hidden rounded-[4rem] shadow-2xl border-4 border-white bg-[linear-gradient(135deg,#020617_0%,#172554_45%,#1e3a8a_100%)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.38),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.28),transparent_32%)]"></div>
+          <div className="relative z-20 p-12 md:p-20 space-y-8 max-w-5xl min-h-[600px] flex flex-col justify-end">
             <div className="flex gap-3">
               <span className="px-5 py-2 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl">Featured Path</span>
-              <span className="px-5 py-2 bg-white/20 backdrop-blur-md text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">Nano-Banana Visual Architecture</span>
+              <span className="px-5 py-2 bg-white/20 backdrop-blur-md text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">{getCourseBriefLabel(featuredCourse)}</span>
             </div>
             <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter italic leading-none">{featuredCourse.course_name}</h2>
-            <p className="text-slate-300 text-xl md:text-2xl font-medium line-clamp-2 leading-relaxed">
-              {featuredCourse.short_description}
-            </p>
+            <div className="rounded-[2.5rem] border border-white/10 bg-white/10 backdrop-blur-md p-8 max-w-4xl">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-200 mb-3">Course Brief</p>
+              <p className="text-slate-100 text-xl md:text-2xl font-medium leading-relaxed">
+                {getCourseSummary(featuredCourse)}
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-8 pt-4">
               <Link
                 to={`/player/${featuredCourse.course_id}`}
@@ -82,8 +78,8 @@ const CourseCatalog: React.FC = () => {
               </Link>
               <div className="hidden md:flex items-center gap-10">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                  <p className="text-white font-black text-xl">12h 45m</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Support</p>
+                  <p className="text-white font-black text-xl">{getCourseSupportText(featuredCourse)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Workforce Rated</p>
@@ -143,18 +139,21 @@ const CourseCatalog: React.FC = () => {
               </div>
             ) : filteredCourses.map(course => (
               <div key={course.course_id} className="bg-white rounded-[4rem] border-2 border-slate-50 shadow-sm overflow-hidden flex flex-col group hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] hover:border-indigo-100 transition-all duration-500">
-                <div className="relative h-64 overflow-hidden">
-                  <img src={course.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" alt={course.course_name} />
-                  <div className="absolute top-8 left-8 flex gap-3">
-                    <span className="bg-slate-900/90 backdrop-blur-md text-white text-[9px] font-black uppercase px-5 py-2.5 rounded-[1rem] shadow-2xl">{course.difficulty || 'Advanced'}</span>
-                  </div>
-                </div>
                 <div className="p-12 flex-1 flex flex-col">
+                  <div className="flex gap-3 mb-8">
+                    <span className="bg-slate-900 text-white text-[9px] font-black uppercase px-5 py-2.5 rounded-[1rem] shadow-xl">{getCourseBriefLabel(course)}</span>
+                  </div>
                   <h3 className="text-3xl font-black text-slate-900 mb-4 group-hover:text-indigo-600 transition-colors leading-tight italic">{course.course_name}</h3>
-                  <p className="text-slate-500 line-clamp-2 mb-10 leading-relaxed font-medium">{course.short_description}</p>
+                  <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 mb-8">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Course Brief</p>
+                    <p className="text-slate-600 leading-relaxed font-medium">{getCourseSummary(course)}</p>
+                  </div>
+                  <p className="text-slate-500 mb-10 leading-relaxed font-medium">{getCourseSupportText(course)}</p>
                   <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-amber-500 text-xl">★</span>
+                      <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.08 3.324a1 1 0 00.95.69h3.495c.969 0 1.371 1.24.588 1.81l-2.828 2.056a1 1 0 00-.364 1.118l1.08 3.323c.3.922-.755 1.688-1.539 1.118l-2.828-2.055a1 1 0 00-1.175 0l-2.828 2.055c-.783.57-1.838-.196-1.539-1.118l1.08-3.323a1 1 0 00-.364-1.118L2.93 8.751c-.783-.57-.38-1.81.588-1.81h3.495a1 1 0 00.95-.69l1.08-3.324z" />
+                      </svg>
                       <span className="font-black text-slate-900">{course.rating}</span>
                     </div>
                     <Link

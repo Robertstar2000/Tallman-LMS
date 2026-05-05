@@ -165,7 +165,7 @@ const WorkforceRegistry: React.FC = () => {
                                             </button>
                                             
                                             {/* Do not allow deleting the master admin account from here */}
-                                            {user.email !== 'robertstar@aol.com' && (
+                                            {user.user_id !== 'u_admin' && (
                                                 <button
                                                     onClick={() => handleDeleteUser(user)}
                                                     className="px-4 py-1.5 bg-red-50 text-red-600 rounded font-medium hover:bg-red-100 block ml-auto w-full text-sm transition-colors"

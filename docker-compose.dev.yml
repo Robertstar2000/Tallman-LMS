@@ -2,7 +2,7 @@ version: "3.8"
 
 ###############################################
 # Tallman-LMS - Docker Compose Development
-# Unified Frontend + Backend on port 3000
+# Unified Frontend + Backend on port 3120
 # (For local Docker Desktop testing)
 ###############################################
 
@@ -14,15 +14,16 @@ services:
     image: tallman-lms:dev
     container_name: tallman-app
     ports:
-      - "3000:3000"
+      - "3120:3120"
     env_file:
       - .env
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - PORT=3120
       - DB_PATH=/data/tallman.db
       - SEED_MODE=blank
-      - VITE_API_URL=http://localhost:3000
+      - AI_PROVIDER=gemini
+      - VITE_API_URL=http://localhost:3120
       - UPLOAD_DIR=/app/uploads
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
@@ -32,7 +33,7 @@ services:
       - uploads-data:/app/uploads
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3120/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

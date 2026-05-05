@@ -3,6 +3,13 @@ import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+    BOOTSTRAP_ADMIN_EMAIL,
+    BOOTSTRAP_ADMIN_EMAIL_ALIASES,
+    BOOTSTRAP_ADMIN_PASSWORD_HASH,
+    BOOTSTRAP_ADMIN_PROFILE,
+    BOOTSTRAP_ADMIN_USER_ID
+} from './bootstrapAdmin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,17 +18,8 @@ const SEED_MODE = (process.env.SEED_MODE || 'blank').toLowerCase();
 
 const INITIAL_USERS = [
     {
-        user_id: 'u_admin',
-        display_name: 'Robert Star',
-        email: 'robertstar@aol.com',
-        avatar_url: '',
-        points: 2500,
-        level: 12,
-        branch_id: 'Addison',
-        department: 'Governance',
-        roles: ['Admin', 'Instructor', 'Learner'],
-        password: 'Rm2214ri#',
-        status: 'active'
+        ...BOOTSTRAP_ADMIN_PROFILE,
+        password_hash: BOOTSTRAP_ADMIN_PASSWORD_HASH
     },
     {
         user_id: 'u_instructor',
@@ -32,7 +30,7 @@ const INITIAL_USERS = [
         level: 8,
         branch_id: 'Addison',
         department: 'Safety Compliance',
-        roles: ['Instructor', 'Learner'],
+        roles: ['Teacher', 'Student'],
         password: 'Rm2214ri#',
         status: 'active'
     },
@@ -45,7 +43,7 @@ const INITIAL_USERS = [
         level: 5,
         branch_id: 'Columbus',
         department: 'Operations',
-        roles: ['Manager', 'Learner'],
+        roles: ['Teacher', 'Student'],
         password: 'Rm2214ri#',
         status: 'active'
     },
@@ -58,7 +56,7 @@ const INITIAL_USERS = [
         level: 2,
         branch_id: 'Lake City',
         department: 'Field Service',
-        roles: ['Learner'],
+        roles: ['Student'],
         password: 'Rm2214ri#',
         status: 'active'
     }
@@ -154,18 +152,35 @@ async function seedSampleRegistry() {
     }
 
     for (const user of INITIAL_USERS) {
-        const hash = await bcrypt.hash(user.password, salt);
+        const hash = 'password' in user ? await bcrypt.hash(user.password, salt) : BOOTSTRAP_ADMIN_PASSWORD_HASH;
 
-        if (user.email.toLowerCase() === 'robertstar@aol.com') {
+        if (user.user_id === BOOTSTRAP_ADMIN_USER_ID) {
             await db.run(`
                 UPDATE users SET
                     user_id = ?,
+                    email = ?,
                     status = 'active',
                     roles = ?,
                     password_hash = ?,
-                    display_name = ?
-                WHERE LOWER(email) = LOWER(?)
-            `, [user.user_id, JSON.stringify(user.roles), hash, user.display_name, user.email]);
+                    display_name = ?,
+                    points = ?,
+                    level = ?,
+                    branch_id = ?,
+                    department = ?
+                WHERE LOWER(email) IN (${BOOTSTRAP_ADMIN_EMAIL_ALIASES.map(() => '?').join(', ')}) OR user_id = ?
+            `, [
+                user.user_id,
+                BOOTSTRAP_ADMIN_EMAIL,
+                JSON.stringify(user.roles),
+                BOOTSTRAP_ADMIN_PASSWORD_HASH,
+                user.display_name,
+                user.points,
+                user.level,
+                user.branch_id,
+                user.department,
+                ...BOOTSTRAP_ADMIN_EMAIL_ALIASES,
+                BOOTSTRAP_ADMIN_USER_ID
+            ]);
         }
 
         await db.run(`
@@ -176,7 +191,19 @@ async function seedSampleRegistry() {
                 display_name = excluded.display_name,
                 roles = excluded.roles,
                 status = excluded.status
-        `, [user.user_id, user.display_name, user.email, hash, user.avatar_url, user.points, user.level, user.branch_id, user.department, JSON.stringify(user.roles), user.status || 'active']);
+        `, [
+            user.user_id,
+            user.display_name,
+            user.email,
+            user.user_id === BOOTSTRAP_ADMIN_USER_ID ? BOOTSTRAP_ADMIN_PASSWORD_HASH : hash,
+            user.avatar_url,
+            user.points,
+            user.level,
+            user.branch_id,
+            user.department,
+            JSON.stringify(user.roles),
+            user.status || 'active'
+        ]);
     }
 
     for (const badge of badges) {

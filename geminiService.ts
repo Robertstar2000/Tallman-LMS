@@ -1,19 +1,29 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { tallmanData } from "./backend-tallman";
-import { generateCourseThumbnail as buildCourseThumbnail } from "./courseThumbnails";
+import { tallmanData } from "./backend-tallman.js";
+import { generateCourseThumbnail as buildCourseThumbnail } from "./courseThumbnails.js";
 
+const AI_PROVIDER = (process.env.AI_PROVIDER || '').trim().toLowerCase() || 'gemini';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+const OLLAMA_ENDPOINT = process.env.OLLAMA_ENDPOINT || 'http://10.10.20.60:11434/api/chat';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma4:26b';
 
-if (!GEMINI_API_KEY) {
-  console.warn("WARNING: Gemini API Key is missing. Check your Vite configuration.");
+if (AI_PROVIDER !== 'ollama' && !GEMINI_API_KEY) {
+  console.warn("WARNING: Gemini API Key is missing. Check the server environment.");
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-/**
- * Utility to handle exponential backoff for API rate limits (429)
- * and structural failures (like malformed JSON)
- */
+const getAiConfigurationError = () =>
+  'AI generation is unavailable. Set GEMINI_API_KEY in the server environment and rebuild the container.';
+
+const getOllamaConfigurationError = (reason?: string) => {
+  const endpoint = OLLAMA_ENDPOINT.replace(/\/api\/chat$/, '');
+  if (reason) {
+    return `AI generation is unavailable. Ollama at ${endpoint} failed: ${reason}`;
+  }
+  return `AI generation is unavailable. Ollama at ${endpoint} is not reachable from this environment.`;
+};
+
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 5000): Promise<T> {
   let lastError: any;
   for (let i = 0; i < maxRetries; i++) {
@@ -37,17 +47,11 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 4, initialDelay =
   throw lastError;
 }
 
-/**
- * Robust JSON extraction from AI responses.
- * Handles markdown wrappers, truncation, and embedded newlines.
- */
 const cleanJsonResponse = (text: string): string => {
   if (!text) return "{}";
 
-  // Stage 1: Strip markdown and sanitize broad control characters
   let cleaned = text.replace(/```json\s*|```/g, "").trim();
 
-  // Find the first structural character
   const firstBrace = cleaned.indexOf('{');
   const firstBracket = cleaned.indexOf('[');
   let start = -1;
@@ -65,7 +69,6 @@ const cleanJsonResponse = (text: string): string => {
 
   cleaned = cleaned.substring(start);
 
-  // Stage 2: Structural Repair for Truncation/Malformed Strings
   const stack: string[] = [];
   let inString = false;
   let escaped = false;
@@ -78,7 +81,6 @@ const cleanJsonResponse = (text: string): string => {
       inString = !inString;
     }
 
-    // Handle unescaped newlines inside strings by converting to \\n
     if (inString && (char === '\n' || char === '\r')) {
       result += "\\n";
       continue;
@@ -97,7 +99,6 @@ const cleanJsonResponse = (text: string): string => {
 
   cleaned = result;
 
-  // Handle Truncation
   if (stack.length > 0) {
     let repair = cleaned.trim();
     if (inString) repair += '"';
@@ -106,10 +107,9 @@ const cleanJsonResponse = (text: string): string => {
     cleaned = repair;
   }
 
-  // Final sanitization of common JSON errors
   return cleaned
-    .replace(/,(\s*[\]}])/g, "$1") // Remove trailing commas
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : "") // Preserve standard whitespace
+    .replace(/,(\s*[\]}])/g, "$1")
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : "")
     .trim();
 };
 
@@ -122,38 +122,29 @@ Your expertise covers:
 -- Tooling brands: DDIN, Bradley Machining (CNC Precision).
 -- Operational locations: Addison (HQ), Columbus, Lake City.`;
 
-const OLLAMA_ENDPOINT = 'http://10.10.20.60:11434/api/chat';
-const OLLAMA_MODEL = 'gemma4:26b';
-
-/**
- * Attempts to generate content using the primary Ollama model.
- * If it fails (network error, timeout, or parsing error if JSON is expected),
- * falls back to Gemini.
- */
-async function generateWithFallback(
+async function generateWithOllama(
   systemInstruction: string,
   userPrompt: string,
-  requireJSON: boolean,
-  geminiCall: () => Promise<string>
+  requireJSON: boolean
 ): Promise<string> {
+  console.log(`[Ollama] Attempting generation with ${OLLAMA_MODEL}...`);
+  const payload: any = {
+    model: OLLAMA_MODEL,
+    messages: [
+      { role: 'system', content: systemInstruction },
+      { role: 'user', content: userPrompt }
+    ],
+    stream: false
+  };
+
+  if (requireJSON) {
+    payload.format = "json";
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
+
   try {
-    console.log(`[Ollama] Attempting generation with ${OLLAMA_MODEL}...`);
-    const payload: any = {
-      model: OLLAMA_MODEL,
-      messages: [
-        { role: 'system', content: systemInstruction },
-        { role: 'user', content: userPrompt }
-      ],
-      stream: false
-    };
-
-    if (requireJSON) {
-      payload.format = "json";
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-
     const res = await fetch(OLLAMA_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -161,28 +152,44 @@ async function generateWithFallback(
       signal: controller.signal
     });
 
-    clearTimeout(timeoutId);
-
     if (!res.ok) {
-      throw new Error(`Ollama HTTP Error: ${res.status}`);
+      throw new Error(`HTTP ${res.status}`);
     }
 
     const data = await res.json();
-    let text = data.message?.content || "";
-    
-    // Quick validation if JSON is required
+    const text = data.message?.content || "";
+
     if (requireJSON) {
       const cleaned = cleanJsonResponse(text);
-      JSON.parse(cleaned); // Will throw if invalid
-      return text;
+      JSON.parse(cleaned);
     }
 
     return text;
   } catch (error: any) {
-    console.warn(`[Ollama] Generation failed, falling back to Gemini... Reason: ${error.message}`);
-    // Fallback to Gemini
-    return await geminiCall();
+    if (error?.name === 'AbortError') {
+      throw new Error(getOllamaConfigurationError('request timeout'));
+    }
+    throw new Error(getOllamaConfigurationError(error?.message || 'unknown error'));
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+async function generateWithConfiguredProvider(
+  systemInstruction: string,
+  userPrompt: string,
+  requireJSON: boolean,
+  geminiCall: () => Promise<string>
+): Promise<string> {
+  if (AI_PROVIDER === 'ollama') {
+    return generateWithOllama(systemInstruction, userPrompt, requireJSON);
+  }
+
+  if (!genAI || !GEMINI_API_KEY) {
+    throw new Error(getAiConfigurationError());
+  }
+
+  return geminiCall();
 }
 
 export const generateCourseOutline = async (topic: string, unitCount: number = 12) => {
@@ -192,12 +199,12 @@ export const generateCourseOutline = async (topic: string, unitCount: number = 1
         Each unit needs a title and a brief description.
         Return as valid JSON: { "titles": ["Unit 1", "Unit 2", ...], "descriptions": ["Desc 1", "Desc 2", ...] }`;
 
-      const responseText = await generateWithFallback(
+      const responseText = await generateWithConfiguredProvider(
         SYSTEM_CONTEXT,
         promptText,
         true,
         async () => {
-          const model = genAI.getGenerativeModel({
+          const model = genAI!.getGenerativeModel({
             model: "gemini-2.5-flash",
             systemInstruction: SYSTEM_CONTEXT
           }, { timeout: 300000 });
@@ -221,14 +228,9 @@ export const generateCourseOutline = async (topic: string, unitCount: number = 1
   });
 };
 
-/**
- * Generate unit content (manual + quiz) from AI.
- * Uses a two-call approach to avoid JSON corruption from huge embedded markdown.
- */
 export const generateUnitContent = async (courseTitle: string, unitTitle: string) => {
   return withRetry(async () => {
     try {
-      // Call 1: Generate the manual content as plain text (no JSON wrapping)
       const manualPrompt = `Write an exhaustive, instructional Technical Manual for the unit: "${courseTitle} - ${unitTitle}".
         
         REQUIREMENTS:
@@ -244,12 +246,12 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
         
         Return ONLY the Markdown content. Do NOT wrap in JSON. Do NOT include quiz questions.`;
 
-      const manualContent = await generateWithFallback(
+      const manualContent = await generateWithConfiguredProvider(
         SYSTEM_CONTEXT,
         manualPrompt,
         false,
         async () => {
-          const model = genAI.getGenerativeModel({
+          const model = genAI!.getGenerativeModel({
             model: "gemini-2.5-flash",
             systemInstruction: SYSTEM_CONTEXT
           }, { timeout: 300000 });
@@ -261,7 +263,6 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
         }
       );
 
-      // Call 2: Generate quiz as structured JSON (small payload, reliable)
       const quizPrompt = `Generate exactly 3 multiple-choice quiz questions about: "${courseTitle} - ${unitTitle}".
         
         Each question must have exactly 4 options and a correctIndex (0-3).
@@ -273,12 +274,12 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
           {"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 2}
         ]`;
 
-      const quizResponseText = await generateWithFallback(
+      const quizResponseText = await generateWithConfiguredProvider(
         SYSTEM_CONTEXT,
         quizPrompt,
         true,
         async () => {
-          const model = genAI.getGenerativeModel({
+          const model = genAI!.getGenerativeModel({
             model: "gemini-2.5-flash",
             systemInstruction: SYSTEM_CONTEXT
           }, { timeout: 300000 });
@@ -296,8 +297,7 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
 
       const quizCleaned = cleanJsonResponse(quizResponseText);
       let quiz = JSON.parse(quizCleaned);
-      
-      // Normalize: if the response is wrapped in an object, extract the array
+
       if (!Array.isArray(quiz)) {
         quiz = quiz.quiz || quiz.questions || quiz.quiz_questions || [];
       }
@@ -313,9 +313,6 @@ export const generateUnitContent = async (courseTitle: string, unitTitle: string
   }, 4, 10000);
 };
 
-/**
- * Generate ONLY quiz questions for a unit (used separately from content generation)
- */
 export const generateQuizOnly = async (courseTitle: string, unitTitle: string) => {
   return withRetry(async () => {
     const promptText = `Generate exactly 3 multiple-choice quiz questions about: "${courseTitle} - ${unitTitle}".
@@ -323,12 +320,12 @@ export const generateQuizOnly = async (courseTitle: string, unitTitle: string) =
         Return as valid JSON array:
         [{"question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0}]`;
 
-    const responseText = await generateWithFallback(
+    const responseText = await generateWithConfiguredProvider(
       SYSTEM_CONTEXT,
       promptText,
       true,
       async () => {
-        const model = genAI.getGenerativeModel({
+        const model = genAI!.getGenerativeModel({
           model: "gemini-2.5-flash",
           systemInstruction: SYSTEM_CONTEXT
         }, { timeout: 120000 });

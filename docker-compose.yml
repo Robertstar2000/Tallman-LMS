@@ -1,21 +1,22 @@
 services:
   # TALLMAN API NEXUS: Unified Front & Backend
-  # Single Port: 3000 (Master Gateway)
+  # Single Port: 3120 (Master Gateway)
   tallman:
     build:
       context: .
       dockerfile: Dockerfile.backend
     container_name: tallman-app
     ports:
-      - "3000:3000"
+      - "3120:3120"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3120
       - DB_PATH=/data/tallman.db
       - SEED_MODE=blank
-      - VITE_API_URL=http://localhost:3000
+      - AI_PROVIDER=gemini
+      - VITE_API_URL=http://localhost:3120
       - UPLOAD_DIR=/app/uploads
     volumes:
       - db-data:/data
@@ -24,7 +25,7 @@ services:
       - tallman-network
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3120/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

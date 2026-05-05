@@ -2,7 +2,7 @@ version: "3.8"
 
 ###############################################
 # Tallman-LMS - Docker Swarm Production Stack  
-# Unified Frontend + Backend served on port 3000
+# Unified Frontend + Backend served on port 3120
 ###############################################
 
 networks:
@@ -19,16 +19,18 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     image: tallman-lms:latest
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3120
       - DB_PATH=/data/tallman.db
       - SEED_MODE=blank
+      - DEPLOYMENT_TARGET=swarm-production
+      - AI_PROVIDER=ollama
+      - OLLAMA_ENDPOINT=http://10.10.20.60:11434/api/chat
+      - OLLAMA_MODEL=gemma4:26b
       - VITE_API_URL=https://lms.tallmanequipment.com
       - UPLOAD_DIR=/app/uploads
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - /var/data/tallman-lms/data:/data
       - /var/data/tallman-lms/uploads:/app/uploads
@@ -77,15 +79,15 @@ services:
         - "traefik.http.routers.tallman.tls.certresolver=letsencrypt"
         - "traefik.http.routers.tallman.service=tallman"
 
-        # Optional public port 3000 router (if Traefik has entrypoint web3000)
-        - "traefik.http.routers.tallman-3000.rule=Host(`lms.tallmanequipment.com`)"
-        - "traefik.http.routers.tallman-3000.entrypoints=web3000"
-        - "traefik.http.routers.tallman-3000.tls=true"
-        - "traefik.http.routers.tallman-3000.tls.certresolver=letsencrypt"
-        - "traefik.http.routers.tallman-3000.service=tallman"
+        # Optional public port 3120 router (if Traefik has entrypoint web3120)
+        - "traefik.http.routers.tallman-3120.rule=Host(`lms.tallmanequipment.com`)"
+        - "traefik.http.routers.tallman-3120.entrypoints=web3120"
+        - "traefik.http.routers.tallman-3120.tls=true"
+        - "traefik.http.routers.tallman-3120.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.tallman-3120.service=tallman"
 
         # Container internal port served by the unified image
-        - "traefik.http.services.tallman.loadbalancer.server.port=3000"
+        - "traefik.http.services.tallman.loadbalancer.server.port=3120"
 
         # Sticky sessions
         - "traefik.http.services.tallman.loadbalancer.sticky.cookie=true"
@@ -100,7 +102,7 @@ services:
         - "traefik.http.services.tallman.loadbalancer.healthcheck.timeout=10s"
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3120/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
