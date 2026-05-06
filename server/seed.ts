@@ -121,6 +121,34 @@ async function seedBlankRegistry() {
         );
     }
 
+    await db.run(`
+        INSERT INTO users (user_id, display_name, email, password_hash, avatar_url, points, level, branch_id, department, roles, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            display_name = excluded.display_name,
+            email = excluded.email,
+            password_hash = excluded.password_hash,
+            avatar_url = excluded.avatar_url,
+            points = excluded.points,
+            level = excluded.level,
+            branch_id = excluded.branch_id,
+            department = excluded.department,
+            roles = excluded.roles,
+            status = excluded.status
+    `, [
+        BOOTSTRAP_ADMIN_PROFILE.user_id,
+        BOOTSTRAP_ADMIN_PROFILE.display_name,
+        BOOTSTRAP_ADMIN_PROFILE.email,
+        BOOTSTRAP_ADMIN_PASSWORD_HASH,
+        BOOTSTRAP_ADMIN_PROFILE.avatar_url,
+        BOOTSTRAP_ADMIN_PROFILE.points,
+        BOOTSTRAP_ADMIN_PROFILE.level,
+        BOOTSTRAP_ADMIN_PROFILE.branch_id,
+        BOOTSTRAP_ADMIN_PROFILE.department,
+        JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+        BOOTSTRAP_ADMIN_PROFILE.status
+    ]);
+
     await setBootstrapState('blank');
     console.log('✅ BLANK BOOTSTRAP SUCCESS: Empty registry ready for Docker/Swarm startup.');
 }

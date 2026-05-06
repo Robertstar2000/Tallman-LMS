@@ -1,5 +1,3 @@
-version: "3.8"
-
 ###############################################
 # Tallman-LMS - Docker Swarm Production Stack  
 # Unified Frontend + Backend served on port 3120
@@ -14,11 +12,13 @@ networks:
     attachable: true
 
 services:
-  tallman:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    image: tallman-lms:latest
+  tallman-app:
+    image: tallmanit/tallmanswarm:LMSApp2.2
+    ports:
+      - target: 3120
+        published: 3120
+        protocol: tcp
+        mode: ingress
     environment:
       - NODE_ENV=production
       - PORT=3120
@@ -28,7 +28,6 @@ services:
       - AI_PROVIDER=ollama
       - OLLAMA_ENDPOINT=http://10.10.20.60:11434/api/chat
       - OLLAMA_MODEL=gemma4:26b
-      - VITE_API_URL=https://lms.tallmanequipment.com
       - UPLOAD_DIR=/app/uploads
       - JWT_SECRET=${JWT_SECRET}
     volumes:
@@ -77,29 +76,29 @@ services:
         - "traefik.http.routers.tallman.entrypoints=https"
         - "traefik.http.routers.tallman.tls=true"
         - "traefik.http.routers.tallman.tls.certresolver=letsencrypt"
-        - "traefik.http.routers.tallman.service=tallman"
+        - "traefik.http.routers.tallman.service=tallman-app"
 
         # Optional public port 3120 router (if Traefik has entrypoint web3120)
         - "traefik.http.routers.tallman-3120.rule=Host(`lms.tallmanequipment.com`)"
         - "traefik.http.routers.tallman-3120.entrypoints=web3120"
         - "traefik.http.routers.tallman-3120.tls=true"
         - "traefik.http.routers.tallman-3120.tls.certresolver=letsencrypt"
-        - "traefik.http.routers.tallman-3120.service=tallman"
+        - "traefik.http.routers.tallman-3120.service=tallman-app"
 
         # Container internal port served by the unified image
-        - "traefik.http.services.tallman.loadbalancer.server.port=3120"
+        - "traefik.http.services.tallman-app.loadbalancer.server.port=3120"
 
         # Sticky sessions
-        - "traefik.http.services.tallman.loadbalancer.sticky.cookie=true"
-        - "traefik.http.services.tallman.loadbalancer.sticky.cookie.name=tallman_session"
+        - "traefik.http.services.tallman-app.loadbalancer.sticky.cookie=true"
+        - "traefik.http.services.tallman-app.loadbalancer.sticky.cookie.name=tallman_session"
 
         # Ensure Traefik routes on the external overlay network
         - "traefik.swarm.network=infra_traefik"
 
         # Health check for Traefik
-        - "traefik.http.services.tallman.loadbalancer.healthcheck.path=/"
-        - "traefik.http.services.tallman.loadbalancer.healthcheck.interval=30s"
-        - "traefik.http.services.tallman.loadbalancer.healthcheck.timeout=10s"
+        - "traefik.http.services.tallman-app.loadbalancer.healthcheck.path=/"
+        - "traefik.http.services.tallman-app.loadbalancer.healthcheck.interval=30s"
+        - "traefik.http.services.tallman-app.loadbalancer.healthcheck.timeout=10s"
 
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3120/ || exit 1"]
@@ -107,8 +106,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-volumes:
-  # NOTE: host path is used above; declare a named volume if you prefer managed volumes
-  db-data: {}
 

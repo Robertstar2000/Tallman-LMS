@@ -67,18 +67,19 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage,
     fileFilter: (req, file, cb) => {
-        const allowed = ['.pdf', '.jpeg', '.jpg', '.png', '.mp4', '.mov'];
+        const allowed = ['.pdf', '.jpeg', '.jpg', '.png', '.mp4', '.mpeg4', '.mov'];
         const ext = path.extname(file.originalname).toLowerCase();
         if (allowed.includes(ext)) {
             cb(null, true);
         } else {
-            cb(new Error('Invalid industrial format. Only PDF, JPEG, PNG, MP4, MOV allowed.'));
+            cb(new Error('Invalid industrial format. Only PDF, MOV, MPEG4, PNG, JPEG, and JPG are allowed.'));
         }
     }
 });
 
 async function startServer() {
     await initDb();
+    await upsertBootstrapAdminUser();
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Tallman API Nexus running on port ${PORT}`);
     });
@@ -107,9 +108,22 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 // Serve frontend static files
 const distPath = path.join(projectRoot, 'dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+    index: false,
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+            return;
+        }
+
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
 
 app.get('/', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.sendFile(path.join(distPath, 'index.html'));
 });
 
@@ -218,7 +232,23 @@ const loadBootstrapAdminUser = async () => {
 };
 
 const upsertBootstrapAdminUser = async () => {
-    await db.run(`
+    const relatedUsers = await db.all(
+        `SELECT user_id, email FROM users WHERE user_id = ? OR LOWER(email) IN (${BOOTSTRAP_ADMIN_EMAIL_ALIASES.map(() => '?').join(', ')})`,
+        [BOOTSTRAP_ADMIN_USER_ID, ...BOOTSTRAP_ADMIN_EMAIL_ALIASES]
+    ) as { user_id: string; email: string }[];
+
+    const keeperUserId = relatedUsers.find(user => user.user_id === BOOTSTRAP_ADMIN_USER_ID)?.user_id
+        ?? relatedUsers[0]?.user_id
+        ?? BOOTSTRAP_ADMIN_USER_ID;
+
+    for (const relatedUser of relatedUsers) {
+        if (relatedUser.user_id === keeperUserId) {
+            continue;
+        }
+        await db.run('DELETE FROM users WHERE user_id = ?', [relatedUser.user_id]);
+    }
+
+    const mutation = await db.run(`
         UPDATE users SET
             user_id = ?,
             display_name = ?,
@@ -231,7 +261,7 @@ const upsertBootstrapAdminUser = async () => {
             department = ?,
             roles = ?,
             status = ?
-        WHERE LOWER(email) IN (${BOOTSTRAP_ADMIN_EMAIL_ALIASES.map(() => '?').join(', ')})
+        WHERE user_id = ?
     `, [
         BOOTSTRAP_ADMIN_PROFILE.user_id,
         BOOTSTRAP_ADMIN_PROFILE.display_name,
@@ -244,58 +274,26 @@ const upsertBootstrapAdminUser = async () => {
         BOOTSTRAP_ADMIN_PROFILE.department,
         JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
         BOOTSTRAP_ADMIN_PROFILE.status,
-        ...BOOTSTRAP_ADMIN_EMAIL_ALIASES
+        keeperUserId
     ]);
 
-    await db.run(`
-        INSERT INTO users (user_id, display_name, email, password_hash, avatar_url, points, level, branch_id, department, roles, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET
-            display_name = excluded.display_name,
-            email = excluded.email,
-            password_hash = excluded.password_hash,
-            avatar_url = excluded.avatar_url,
-            points = excluded.points,
-            level = excluded.level,
-            branch_id = excluded.branch_id,
-            department = excluded.department,
-            roles = excluded.roles,
-            status = excluded.status
-    `, [
-        BOOTSTRAP_ADMIN_PROFILE.user_id,
-        BOOTSTRAP_ADMIN_PROFILE.display_name,
-        BOOTSTRAP_ADMIN_PROFILE.email,
-        BOOTSTRAP_ADMIN_PASSWORD_HASH,
-        BOOTSTRAP_ADMIN_PROFILE.avatar_url,
-        BOOTSTRAP_ADMIN_PROFILE.points,
-        BOOTSTRAP_ADMIN_PROFILE.level,
-        BOOTSTRAP_ADMIN_PROFILE.branch_id,
-        BOOTSTRAP_ADMIN_PROFILE.department,
-        JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
-        BOOTSTRAP_ADMIN_PROFILE.status
-    ]);
-
-    await db.run(
-        'UPDATE users SET email = ?, display_name = ?, password_hash = ?, status = ?, roles = ?, points = ?, level = ?, branch_id = ?, department = ? WHERE user_id = ?',
-        [
-            BOOTSTRAP_ADMIN_PROFILE.email,
+    if (getMutationCount(mutation) === 0) {
+        await db.run(`
+            INSERT INTO users (user_id, display_name, email, password_hash, avatar_url, points, level, branch_id, department, roles, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            BOOTSTRAP_ADMIN_PROFILE.user_id,
             BOOTSTRAP_ADMIN_PROFILE.display_name,
+            BOOTSTRAP_ADMIN_PROFILE.email,
             BOOTSTRAP_ADMIN_PASSWORD_HASH,
-            BOOTSTRAP_ADMIN_PROFILE.status,
-            JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+            BOOTSTRAP_ADMIN_PROFILE.avatar_url,
             BOOTSTRAP_ADMIN_PROFILE.points,
             BOOTSTRAP_ADMIN_PROFILE.level,
             BOOTSTRAP_ADMIN_PROFILE.branch_id,
             BOOTSTRAP_ADMIN_PROFILE.department,
-            BOOTSTRAP_ADMIN_PROFILE.user_id
-        ]
-    );
-
-    for (const legacyEmail of ['robertstar@aol.com']) {
-        await db.run(
-            'DELETE FROM users WHERE LOWER(email) = LOWER(?) AND user_id <> ?',
-            [legacyEmail, BOOTSTRAP_ADMIN_PROFILE.user_id]
-        );
+            JSON.stringify(BOOTSTRAP_ADMIN_PROFILE.roles),
+            BOOTSTRAP_ADMIN_PROFILE.status
+        ]);
     }
 
     return db.get('SELECT * FROM users WHERE user_id = ?', [BOOTSTRAP_ADMIN_USER_ID]) as Promise<any>;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Lesson, Enrollment, Course, User } from '../types';
-import { TallmanAPI } from '../backend-server';
+import { SERVER_BASE, TallmanAPI } from '../backend-server';
 
 const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) => {
   const { courseId } = useParams();
@@ -77,6 +77,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
   const activeLessonIdx = useMemo(() =>
     flatLessons.findIndex(l => l.lesson_id === activeLessonId)
     , [flatLessons, activeLessonId]);
+  const isTeacherView = !!user?.roles.includes('Teacher' as any);
 
   const isLastLesson = activeLessonIdx !== -1 && activeLessonIdx === flatLessons.length - 1;
   const currentQuizPassThreshold = currentLesson?.quiz_questions?.length
@@ -176,6 +177,14 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
   }, [enrollment, flatLessons]);
 
   useEffect(() => {
+    setShowAttachment(false);
+  }, [activeLessonId]);
+
+  useEffect(() => {
+    if (!currentLesson?.attachment_url || isTeacherView) {
+      return;
+    }
+
     if (currentLesson?.attachment_url) {
       const saved = sessionStorage.getItem('tallman_popped_lessons');
       const popped: string[] = saved ? JSON.parse(saved) : [];
@@ -186,7 +195,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
         sessionStorage.setItem('tallman_popped_lessons', JSON.stringify(newPopped));
       }
     }
-  }, [currentLesson]);
+  }, [currentLesson, isTeacherView]);
 
   if (loading) return (
     <div className="h-full flex flex-col items-center justify-center p-20 text-center">
@@ -215,6 +224,9 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
       attachmentToDisplay = { url: course.attachment_url, type: course.attachment_type || 'pdf', label: 'Global Course Attachment' };
     }
   }
+  const resolvedAttachmentUrl = attachmentToDisplay?.url
+    ? (attachmentToDisplay.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay.url}`)
+    : null;
 
   return (
     <div className="h-[calc(100vh-12rem)] md:h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-6 animate-in fade-in duration-500">
@@ -362,10 +374,21 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                   const active = activeLessonId === l.lesson_id;
                   const done = enrollment.completed_lesson_ids?.includes(l.lesson_id);
                   const attempts = enrollment.unit_attempts?.[l.lesson_id] || 0;
+                  const hasAttachment = !!l.attachment_url;
                   return (
                     <button key={l.lesson_id} onClick={() => { setActiveLessonId(l.lesson_id); setShowCompletion(false); setQuizScore(null); setUserAnswers([]); setFailedAttempt(false); }} className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${active ? 'bg-indigo-600 border-indigo-600 text-white' : done ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-transparent hover:bg-slate-50'}`}>
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black ${active ? 'bg-white/20' : done ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>{done ? (attempts > 1 ? '⚠️' : '✓') : (attempts > 0 ? '❌' : '•')}</div>
-                      <span className="text-xs font-black truncate">{l.lesson_title}</span>
+                      <span className="text-xs font-black truncate flex-1">{l.lesson_title}</span>
+                      {hasAttachment && (
+                        <span
+                          className={`shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg border ${active ? 'border-white/20 bg-white/10 text-white' : 'border-indigo-100 bg-indigo-50 text-indigo-600'}`}
+                          title="Attachment available for this lesson"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -385,7 +408,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
               </div>
               <div className="flex items-center gap-3">
                 <a
-                  href={attachmentToDisplay?.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay?.url}`}
+                  href={resolvedAttachmentUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-12 h-12 bg-white/10 hover:bg-indigo-500 rounded-2xl flex items-center justify-center transition-all group"
@@ -404,12 +427,15 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
 
             <div className="flex-1 overflow-hidden bg-slate-100 p-4">
               {attachmentToDisplay?.type === 'pdf' ? (
-                <iframe src={attachmentToDisplay.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay.url}`} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
+                <iframe src={resolvedAttachmentUrl || undefined} className="w-full h-full rounded-2xl shadow-inner border bg-white" title="PDF Viewer" />
               ) : attachmentToDisplay?.type === 'video' ? (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
                   <video 
                     id="tech-video-player"
-                    src={attachmentToDisplay.url.startsWith('http') ? attachmentToDisplay.url : `${SERVER_BASE}${attachmentToDisplay.url}`} 
+                    src={resolvedAttachmentUrl || undefined} 
+                    controls
+                    playsInline
+                    preload="metadata"
                     className="max-w-full max-h-full" 
                     onEnded={() => { /* maybe show replay overlay */ }}
                   />
@@ -437,7 +463,7 @@ const CoursePlayer: React.FC<{ refreshUser: () => void }> = ({ refreshUser }) =>
                 </div>
               ) : (
                 <div className="w-full h-full p-8 overflow-auto flex items-center justify-center bg-white rounded-2xl shadow-inner">
-                  <img src={attachmentToDisplay?.url} alt="Technical Schematic" className="max-w-full max-h-full rounded shadow-xl object-contain" />
+                  <img src={resolvedAttachmentUrl || undefined} alt="Technical Schematic" className="max-w-full max-h-full rounded shadow-xl object-contain" />
                 </div>
               )}
             </div>

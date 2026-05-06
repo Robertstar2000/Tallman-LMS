@@ -1,249 +1,345 @@
-# Tallman LMS - Docker Desktop Deployment
+# Tallman LMS - Deployment Guide
 
-## 🎉 Deployment Status: SUCCESSFUL
+## Table of Contents
 
-The Tallman LMS application has been successfully built and deployed to Docker Desktop with all recent fixes applied, including the **Workforce Registry delete function fix**.
-
-## 📦 Container Status
-
-### ✅ Running Containers
-
-| Container Name | Service | Port | Status |
-|----------------|---------|------|--------|
-| `tallman-backend` | API Nexus | 3185 | ✅ Running |
-| `tallman-frontend` | UI Console | 3180 | ✅ Running |
-
-## 🔗 Access URLs
-
-- **Frontend (Main Application)**: http://localhost:3180
-- **Backend API**: http://localhost:3185
-- **API Health Check**: http://localhost:3185/api/courses
-
-## 🛠️ Docker Commands
-
-### Start the Application
-```bash
-docker-compose up -d
-```
-
-### Stop the Application
-```bash
-docker-compose down
-```
-
-### View Logs
-```bash
-# View all logs
-docker-compose logs
-
-# View backend logs
-docker-compose logs backend
-
-# View frontend logs
-docker-compose logs frontend
-
-# Follow logs in real-time
-docker-compose logs -f
-```
-
-### Rebuild Containers
-```bash
-# Rebuild with cache
-docker-compose build
-
-# Rebuild without cache (clean build)
-docker-compose build --no-cache
-
-# Rebuild and restart
-docker-compose up -d --build
-```
-
-### Check Container Status
-```bash
-docker-compose ps
-```
-
-### Access Container Shell
-```bash
-# Backend container
-docker exec -it tallman-backend /bin/bash
-
-# Frontend container
-docker exec -it tallman-frontend /bin/bash
-```
-
-## 📋 What's Included in This Build
-
-### ✅ Recent Fixes Applied
-
-1. **Workforce Registry Delete Function** - Fixed and verified
-   - Proper CASCADE constraints
-   - Safety verification (only deletes target user)
-   - Detailed audit logging
-   - Protection for all other users
-
-2. **Database Transaction Handling** - Improved
-   - Better SQLite transaction wrapper
-   - Atomic operations ensured
-
-3. **Enhanced Error Handling** - Throughout the application
-   - Better error messages
-   - Comprehensive logging
-
-## 🗄️ Database
-
-The application uses **SQLite** in development mode with the database file located at:
-- **Container Path**: `/app/tallman.db`
-- **Host Path**: `./tallman.db` (mounted volume)
-
-### Database Persistence
-
-The database is persisted through Docker volumes, so your data will remain intact even if you restart the containers.
-
-## 🔐 Default Credentials
-
-### Admin Account
-- **Email**: robertstar@aol.com
-- **Password**: (Your configured password)
-
-### Test User
-- **Email**: BobM@tallmanequipment.com
-- **Password**: (Your configured password)
-
-## 🧪 Testing the Deployment
-
-### 1. Verify Backend is Running
-```bash
-curl http://localhost:3185
-```
-You should see the "Tallman API Nexus" welcome page.
-
-### 2. Verify Frontend is Running
-Open your browser and navigate to:
-```
-http://localhost:3180
-```
-
-### 3. Test the Workforce Registry Delete Function
-1. Log in as admin (robertstar@aol.com)
-2. Navigate to **Workforce Registry**
-3. Try deleting a test user (not robertstar@aol.com)
-4. Check the backend logs to verify:
-   ```bash
-   docker logs tallman-backend --tail 50
-   ```
-   You should see:
-   ```
-   [DELETE] Initiating deletion for user: [Name] ([Email])
-   [DELETE] Total users before deletion: X
-   [DELETE] Successfully deleted user [Name]. All other users unaffected.
-   ```
-
-## 📊 Container Architecture
-
-```
-┌─────────────────────────────────────────┐
-│         Docker Network                  │
-│      (tallman-network)                  │
-│                                         │
-│  ┌──────────────┐    ┌──────────────┐  │
-│  │   Frontend   │◄───┤   Backend    │  │
-│  │   (Vite)     │    │   (Express)  │  │
-│  │   Port 3180  │    │   Port 3185  │  │
-│  └──────────────┘    └──────────────┘  │
-│         │                    │          │
-│         │                    │          │
-│         ▼                    ▼          │
-│    Host:3180            Host:3185       │
-└─────────────────────────────────────────┘
-```
-
-## 🔄 Development Workflow
-
-### Making Code Changes
-
-1. **Edit your code** in the local directory
-2. **Changes are automatically synced** to containers via volumes
-3. **Hot reload is enabled** for both frontend and backend
-4. **No rebuild needed** for most changes
-
-### When to Rebuild
-
-Rebuild containers when you:
-- Change `package.json` dependencies
-- Modify Dockerfiles
-- Update environment variables in `.env`
-- Need a clean slate
-
-## 🚨 Troubleshooting
-
-### Container Won't Start
-```bash
-# Check logs
-docker-compose logs
-
-# Remove and recreate
-docker-compose down
-docker-compose up -d
-```
-
-### Port Already in Use
-```bash
-# Find process using port 3180 or 3185
-netstat -ano | findstr :3180
-netstat -ano | findstr :3185
-
-# Stop the process or change ports in docker-compose.yml
-```
-
-### Database Issues
-```bash
-# Access backend container
-docker exec -it tallman-backend /bin/bash
-
-# Check database
-sqlite3 /app/tallman.db
-.tables
-.quit
-```
-
-### Reset Everything
-```bash
-# Stop and remove containers, networks, volumes
-docker-compose down -v
-
-# Rebuild from scratch
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-## 📝 Environment Variables
-
-The application uses environment variables from `.env` file:
-
-```env
-JWT_SECRET=your_secret_key
-GEMINI_API_KEY=your_gemini_api_key
-NODE_ENV=development
-```
-
-## 🎯 Next Steps
-
-1. ✅ **Application is running** - Access at http://localhost:3180
-2. ✅ **All fixes applied** - Including Workforce Registry delete function
-3. ✅ **Database initialized** - With seed data
-4. ✅ **Ready for testing** - All features available
-
-## 📚 Additional Resources
-
-- **Main Documentation**: `README.md`
-- **Delete Function Fix Details**: `WORKFORCE_REGISTRY_DELETE_FIX.md`
-- **Docker Compose Config**: `docker-compose.yml`
-- **Backend Dockerfile**: `Dockerfile.backend`
-- **Frontend Dockerfile**: `Dockerfile.frontend`
+1. [Overview](#overview)
+2. [Quick Start](#quick-start)
+3. [Docker Desktop Installation](#docker-desktop-installation)
+4. [Docker Swarm Installation](#docker-swarm-installation)
+5. [Configuration](#configuration)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
-**Deployment Date**: 2026-01-26  
-**Status**: ✅ Production Ready  
-**Docker Desktop**: Compatible
+## Overview
+
+Tallman LMS uses the unified Tallman image for both local Docker Desktop and production Swarm deployments.
+
+### Deployment Options
+
+| Environment | Compose File | Use Case | Access URL |
+|-------------|--------------|----------|------------|
+| **Docker Desktop** | `docker-compose.yml` | Local development and validation | http://localhost:3120 |
+| **Docker Swarm** | `docker-compose.swarm.yml` | Production cluster | https://lms.tallmanequipment.com |
+
+### Master Registry
+
+**Docker Hub**: `tallmanit/tallmanswarm:LMSApp2.2`
+
+**GitHub**: https://github.com/Robertstar2000/Tallman-LMS
+
+---
+
+## Quick Start
+
+### Docker Desktop
+
+```powershell
+docker compose up -d --build --force-recreate
+start http://localhost:3120
+```
+
+### Docker Swarm
+
+```bash
+ssh 10.10.20.36
+cd /var/data/config
+docker stack deploy -c docker-compose-tallman.yaml tallman
+```
+
+---
+
+## Docker Desktop Installation
+
+### Prerequisites
+
+- **Docker Desktop** installed and running
+- At least **4GB RAM** allocated to Docker
+- A local `.env` file with:
+  - `JWT_SECRET`
+  - `GEMINI_API_KEY`
+
+### Method 1: Using Docker Compose
+
+1. **Navigate to the project directory:**
+
+   ```powershell
+   cd C:\Users\rober\Desktop\tallman-lms (1)
+   ```
+
+2. **Start Tallman LMS:**
+
+   ```powershell
+   docker compose up -d --build --force-recreate
+   ```
+
+3. **Verify it's running:**
+
+   ```powershell
+   docker compose ps
+   ```
+
+4. **Access the Web UI:**
+
+   Open http://localhost:3120 in your browser.
+
+5. **View logs:**
+
+   ```powershell
+   docker logs -f tallman-app
+   ```
+
+### Method 2: Using Docker Run
+
+```powershell
+docker pull tallmanit/tallmanswarm:LMSApp2.2
+
+docker run -d `
+  --name tallman-app `
+  -p 3120:3120 `
+  -v tallman-lms-data:/data `
+  -v tallman-lms-uploads:/app/uploads `
+  -e NODE_ENV=production `
+  -e PORT=3120 `
+  -e DB_PATH=/data/tallman.db `
+  -e SEED_MODE=blank `
+  -e AI_PROVIDER=gemini `
+  -e JWT_SECRET=replace_with_your_secret `
+  -e GEMINI_API_KEY=replace_with_your_google_ai_key `
+  --restart unless-stopped `
+  tallmanit/tallmanswarm:LMSApp2.2
+```
+
+### Stopping and Removing
+
+```powershell
+docker compose down
+docker compose down -v
+```
+
+### Updating to Latest Version
+
+```powershell
+docker pull tallmanit/tallmanswarm:LMSApp2.2
+docker compose up -d --force-recreate
+```
+
+---
+
+## Docker Swarm Installation
+
+### Prerequisites
+
+- Access to the Tallman Docker Swarm cluster
+- SSH access to a manager node
+- DNS configured for the application domain
+- `JWT_SECRET` available in the deployment shell
+- Shared storage mounted at `/var/data`
+
+### Cluster Infrastructure
+
+| Component | Address |
+|-----------|---------|
+| Manager Node 1 | 10.10.20.36 |
+| Manager Node 2 | 10.10.20.61 |
+| Manager Node 3 | 10.10.20.63 |
+| Storage Server (NFS) | 10.10.20.64 |
+| Virtual IP (Keepalived) | 10.10.20.65 |
+
+### Deployment Steps
+
+1. **SSH to a manager node:**
+
+   ```bash
+   ssh 10.10.20.36
+   ```
+
+2. **Create the data directories:**
+
+   ```bash
+   sudo mkdir -p /var/data/tallman-lms/data
+   sudo mkdir -p /var/data/tallman-lms/uploads
+   sudo chmod 755 /var/data/tallman-lms
+   ```
+
+3. **Copy the Swarm compose file:**
+
+   ```bash
+   scp docker-compose.swarm.yml 10.10.20.36:/var/data/config/docker-compose-tallman.yaml
+   ```
+
+4. **Configure DNS:**
+
+   Point `lms.tallmanequipment.com` to `10.10.20.65`.
+
+5. **Set the JWT secret:**
+
+   ```bash
+   export JWT_SECRET='replace_with_your_long_random_secret'
+   ```
+
+6. **Deploy the stack:**
+
+   ```bash
+   cd /var/data/config
+   docker stack deploy -c docker-compose-tallman.yaml tallman
+   ```
+
+7. **Verify deployment:**
+
+   ```bash
+   docker stack services tallman
+   docker service logs tallman_tallman-app
+   ```
+
+8. **Access the application:**
+
+   Open https://lms.tallmanequipment.com
+
+### Stack Management Commands
+
+| Command | Description |
+|---------|-------------|
+| `docker stack deploy -c docker-compose-tallman.yaml tallman` | Deploy or update the stack |
+| `docker service update --force tallman_tallman-app` | Force redeploy with the same image tag |
+| `docker stack rm tallman` | Remove the stack |
+| `docker stack services tallman` | View service status |
+| `docker service logs tallman_tallman-app` | View logs |
+
+### Updating the Application
+
+```bash
+docker pull tallmanit/tallmanswarm:LMSApp2.2
+docker service update --image tallmanit/tallmanswarm:LMSApp2.2 tallman_tallman-app
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Docker Desktop | Docker Swarm |
+|----------|-------------|----------------|--------------|
+| `JWT_SECRET` | Signs auth tokens | Required | Required |
+| `GEMINI_API_KEY` | Local/test AI generation key | Required | Not used |
+| `AI_PROVIDER` | AI backend selector | `gemini` | `ollama` |
+| `OLLAMA_ENDPOINT` | Production Ollama endpoint | Not used | `http://10.10.20.60:11434/api/chat` |
+| `OLLAMA_MODEL` | Production model | Not used | `gemma4:26b` |
+
+### Data Persistence
+
+| Environment | Volume/Mount | Purpose |
+|-------------|--------------|---------|
+| Docker Desktop | `db-data:/data` | SQLite database |
+| Docker Desktop | `uploads-data:/app/uploads` | Unit attachments |
+| Docker Swarm | `/var/data/tallman-lms/data:/data` | Shared persistent database |
+| Docker Swarm | `/var/data/tallman-lms/uploads:/app/uploads` | Shared persistent attachments |
+
+### Bootstrap Admin
+
+The bootstrap admin is recreated automatically on startup and during blank seeding.
+
+| Field | Value |
+|-------|-------|
+| Email | `robertstar@aol.com` |
+| Password | `Rm2214ri#` |
+| Role | `Teacher` |
+
+### Backup
+
+**Docker Desktop:**
+```powershell
+docker run --rm -v db-data:/data -v ${PWD}:/backup alpine tar cvf /backup/tallman-lms-backup.tar /data
+```
+
+**Docker Swarm:**
+```bash
+tar -czvf /var/data/backups/tallman-lms-$(date +%Y%m%d).tar.gz /var/data/tallman-lms/
+```
+
+---
+
+## Troubleshooting
+
+### Docker Desktop Issues
+
+**Container won't start:**
+```powershell
+docker compose ps
+docker logs tallman-app
+docker compose down
+docker compose up -d --build --force-recreate
+```
+
+**Port 3120 already in use:**
+```powershell
+netstat -ano | findstr :3120
+```
+
+**Image pull fails:**
+```powershell
+docker login
+docker pull tallmanit/tallmanswarm:LMSApp2.2
+```
+
+### Docker Swarm Issues
+
+**Service won't start:**
+```bash
+docker service ps tallman_tallman-app --no-trunc
+docker service logs tallman_tallman-app
+```
+
+**Can't access via domain:**
+
+1. Verify DNS: `nslookup lms.tallmanequipment.com`
+2. Check Traefik: `docker service logs infra_traefik`
+3. Verify network: `docker network ls | grep tallman`
+
+**Storage issues:**
+```bash
+df -h | grep /var/data
+sudo mount -a
+```
+
+### Common Fixes
+
+| Issue | Solution |
+|-------|----------|
+| `JWT_SECRET` warning during deploy | Export `JWT_SECRET` before `docker stack deploy` |
+| App starts but AI generation fails locally | Set `GEMINI_API_KEY` in `.env` and rebuild |
+| App starts but production AI fails | Verify `10.10.20.60:11434` reachability from Swarm node |
+| Users logged out after restart | Keep the same `JWT_SECRET` |
+| SQLite write conflicts | Keep Swarm replicas at `1` |
+
+---
+
+## Network Access Points
+
+### Docker Desktop
+
+| Service | URL |
+|---------|-----|
+| Web UI | http://localhost:3120 |
+
+### Docker Swarm
+
+| Service | URL |
+|---------|-----|
+| Tallman LMS | https://lms.tallmanequipment.com |
+| Traefik Dashboard | https://traefik.swarm.tallmanequipment.com |
+| Portainer | https://portainer.swarm.tallmanequipment.com |
+
+---
+
+## Related Documentation
+
+- [Swarm Platform Guide](./swarm.md)
+- [Docker Compose Swarm Stack](./docker-compose.swarm.yml)
+- [Local Docker Compose](./docker-compose.yml)
+- [Main Project README](./README.md)
+
+---
+
+*Last Updated: May 2026*

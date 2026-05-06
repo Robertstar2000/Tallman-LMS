@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { User } from '../types';
 import { TallmanAPI } from '../backend-server';
 
-const bootstrapAdminAliases = ['robertstarr@aol.com', 'robertstar@aol.com'];
+const bootstrapAdminAliases = ['robertstar@aol.com', 'robertstarr@aol.com'];
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -64,7 +64,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const handleHiddenTrigger = async () => {
     backdoorCounter.current += 1;
     if (backdoorCounter.current >= 5) {
-      setEmail('robertstarr@aol.com');
+      setEmail('robertstar@aol.com');
       setError('Bootstrap admin email inserted. Enter the bootstrap password to continue.');
       backdoorCounter.current = 0;
     }

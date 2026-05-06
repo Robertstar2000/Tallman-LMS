@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson, UserRole } from '../types';
-import { TallmanAPI } from '../backend-server';
+import { SERVER_BASE, TallmanAPI } from '../backend-server';
 
 const AdminCourseEditor: React.FC = () => {
   const { courseId } = useParams();
@@ -102,16 +102,70 @@ const AdminCourseEditor: React.FC = () => {
     setCourse({ ...course, modules: newModules });
   };
 
-  const handleAddAttachment = (explicitUrl?: string, explicitType?: any) => {
+  const updateCourseLesson = (
+    mIdx: number,
+    lIdx: number,
+    mutate: (lesson: Lesson) => Lesson
+  ) => {
+    if (!course || !course.modules) return null;
+
+    const newModules = [...course.modules];
+    const targetModule = { ...newModules[mIdx] };
+    const newLessons = [...targetModule.lessons];
+    newLessons[lIdx] = mutate({ ...newLessons[lIdx] });
+    targetModule.lessons = newLessons;
+    newModules[mIdx] = targetModule;
+
+    return { ...course, modules: newModules };
+  };
+
+  const persistCourse = async (nextCourse: Course) => {
+    setCourse(nextCourse);
+    setSaving(true);
+    try {
+      await TallmanAPI.updateCourse(nextCourse);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddAttachment = async (explicitUrl?: string, explicitType?: any) => {
     if (attachmentModal === null) return;
     const { mIdx, lIdx } = attachmentModal;
     const finalUrl = explicitUrl || attachmentUrl;
     const finalType = explicitType || attachmentType;
-    
-    updateLessonField(mIdx, lIdx, 'attachment_url', finalUrl);
-    updateLessonField(mIdx, lIdx, 'attachment_type', finalType);
-    setAttachmentModal(null);
-    setAttachmentUrl('');
+
+    const nextCourse = updateCourseLesson(mIdx, lIdx, lesson => ({
+      ...lesson,
+      attachment_url: finalUrl,
+      attachment_type: finalType
+    }));
+
+    if (!nextCourse) return;
+
+    try {
+      await persistCourse(nextCourse);
+      setAttachmentModal(null);
+      setAttachmentUrl('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to save attachment.');
+    }
+  };
+
+  const handleRemoveAttachment = async (mIdx: number, lIdx: number) => {
+    const nextCourse = updateCourseLesson(mIdx, lIdx, lesson => ({
+      ...lesson,
+      attachment_url: undefined,
+      attachment_type: undefined
+    }));
+
+    if (!nextCourse) return;
+
+    try {
+      await persistCourse(nextCourse);
+    } catch (err: any) {
+      alert(err.message || 'Failed to remove attachment.');
+    }
   };
 
   if (loading) return (
@@ -163,6 +217,14 @@ const AdminCourseEditor: React.FC = () => {
                       <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${lesson.lesson_type === 'quiz' ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
                         {lesson.lesson_type}
                       </span>
+                      {lesson.attachment_url && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase tracking-widest">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          Attachment
+                        </span>
+                      )}
                       <input
                         className="bg-transparent font-black text-slate-900 outline-none focus:bg-white px-2 rounded"
                         value={lesson.lesson_title}
@@ -179,8 +241,19 @@ const AdminCourseEditor: React.FC = () => {
                         className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${lesson.attachment_url ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500 hover:bg-indigo-600 hover:text-white'}`}
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                        {lesson.attachment_url ? 'Attachment Active' : 'Add Attachment'}
+                        Add Attachment
                       </button>
+                      {lesson.attachment_url && (
+                        <button
+                          onClick={() => handleRemoveAttachment(mIdx, lIdx)}
+                          className="flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-rose-50 text-rose-600 hover:bg-rose-100"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Delete Attachment
+                        </button>
+                      )}
                       <button onClick={() => deleteLesson(mIdx, lIdx)} className="text-slate-300 hover:text-rose-500 transition-colors ml-2">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                       </button>
@@ -284,17 +357,24 @@ const AdminCourseEditor: React.FC = () => {
                 <div className="space-y-4">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Accepted Formats</label>
                   <div className="grid grid-cols-1 gap-2">
-                    {['pdf', 'image', 'video'].map(type => (
+                    {[
+                      { key: 'pdf', label: '.pdf', type: 'pdf' },
+                      { key: 'png', label: '.png', type: 'image' },
+                      { key: 'jpeg', label: '.jpeg', type: 'image' },
+                      { key: 'mov', label: '.mov', type: 'video' },
+                      { key: 'mpeg4', label: '.mpeg4', type: 'video' }
+                    ].map(entry => (
                       <button
-                        key={type}
-                        onClick={() => setAttachmentType(type as any)}
-                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all font-black uppercase text-xs ${attachmentType === type ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400 hover:border-slate-300'}`}
+                        key={entry.key}
+                        onClick={() => setAttachmentType(entry.type as any)}
+                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all font-black uppercase text-xs ${attachmentType === entry.type ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400 hover:border-slate-300'}`}
                       >
-                        {type}
-                        {attachmentType === type && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 01-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                        {entry.label}
+                        {attachmentType === entry.type && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 01-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
                       </button>
                     ))}
                   </div>
+                  <p className="text-[10px] font-bold text-slate-500">Supported viewer types: `.pdf`, `.mov`, `.mpeg4`, `.png`, `.jpeg`</p>
                   <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-2">Maximum Registry Size: 100MB</p>
                 </div>
 
@@ -337,7 +417,7 @@ const AdminCourseEditor: React.FC = () => {
                           type="file"
                           id="nexus-file-input"
                           className="hidden"
-                          accept=".pdf,.jpeg,.jpg,.png,.mp4,.mov"
+                          accept=".pdf,.jpeg,.jpg,.png,.mp4,.mpeg4,.mov,application/pdf,image/png,image/jpeg,video/mp4,video/quicktime"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {

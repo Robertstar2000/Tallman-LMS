@@ -288,10 +288,27 @@ export const TallmanAPI = new TallmanAPIClient();
 
 // Capture global errors
 if (typeof window !== 'undefined') {
+  const isIgnorableBrowserExtensionError = (value: any) => {
+    const message = typeof value === 'string'
+      ? value
+      : value?.message || value?.reason?.message || '';
+
+    const normalized = String(message).toLowerCase();
+    return normalized.includes('a listener indicated an asynchronous response by returning true') &&
+      normalized.includes('message channel closed before a response was received');
+  };
+
   window.onerror = (message, source, lineno, colno, error) => {
+    if (isIgnorableBrowserExtensionError(error || message)) {
+      return true;
+    }
     TallmanAPI.logError(error || { message, source, lineno, colno });
   };
   window.onunhandledrejection = (event) => {
+    if (isIgnorableBrowserExtensionError(event.reason)) {
+      event.preventDefault();
+      return;
+    }
     TallmanAPI.logError(event.reason);
   };
 }

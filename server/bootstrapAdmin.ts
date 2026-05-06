@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
 
 export const BOOTSTRAP_ADMIN_USER_ID = 'u_admin';
-export const BOOTSTRAP_ADMIN_EMAIL = 'robertstarr@aol.com';
+export const BOOTSTRAP_ADMIN_EMAIL = 'robertstar@aol.com';
 export const BOOTSTRAP_ADMIN_EMAIL_ALIASES = [
   BOOTSTRAP_ADMIN_EMAIL,
-  'robertstar@aol.com'
+  'robertstarr@aol.com'
 ];
 export const BOOTSTRAP_ADMIN_PASSWORD_HASH = '$2b$10$OyIPC8QP2X8EyB/G5IcBSODP6Zi6r3zdzxPu6OI2IGADC5TtqiFWm';
 export const BOOTSTRAP_ADMIN_PROFILE = {
@@ -16,7 +16,7 @@ export const BOOTSTRAP_ADMIN_PROFILE = {
   level: 12,
   branch_id: 'Addison',
   department: 'Governance',
-  roles: ['Teacher', 'Student'],
+  roles: ['Teacher'],
   status: 'active'
 };
 
